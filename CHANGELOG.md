@@ -1,10 +1,40 @@
 # Plume-Util change log
 
-## 1.5.2 (forthcoming)
+## 1.5.8 (2021-07-20)
 
+- Bug fix in `System.gcPercentage`.
+
+## 1.5.7 (2021-07-20)
+
+- Bug fix: make `System.gcUsageMessage` static.
+
+## 1.5.6 (2021-07-20)
+
+- New method `System.gcUsageMessage` is easier to use than `gcPercentage`.
+- Method `SystemPlume.gcPercentage` is now more efficient.
+
+## 1.5.5 (2021-06-08)
+
+- Fix bug where `.gz` files were read and written uncompressed.
+- Fix nullness type of class `StringsPlume.NullableStringComparator`.
+
+## 1.5.4 (2021-06-08)
+
+- Expand the contract of `CollectionsPlume.withoutDuplicates`.
+- Add `withoutDuplicatesComparable` which is more efficient.
+
+## 1.5.3 (2021-05-04)
+
+- Fix problem with .jar file in previous release.
+
+## 1.5.2 (2021-04-28)
+
+- New methods `CollectionsPlume.mapCapacity` to compute the size for a newly-allocated map.
 - New methods `hasDuplicates` in `ArraysPlume` and `ColletionsPlume`
 - Renamed methods (the old versions still work but are deprecated):
    - `ArraysPlume.noDuplicates(List)` to `ColletionsPlume.noDuplicates`
+- Moved methods (the old versions still work but are deprecated):
+   - `UtilPlume.intersectionCardinality` and `intersectionCardinalityAtLeast` to `CollectionsPlume`
 
 ## 1.5.1 (2021-03-28)
 
@@ -14,7 +44,7 @@
 
 - New methods for writing possibly-compressed files:
    - `FilesPlume.newFileOutputStream` (3 overloads)
-   - `FilesPlume.newFileWritec` (5 overloads)
+   - `FilesPlume.newFileWriter` (5 overloads)
 - New methods:
    - `ArraysPlume`:
        - `append`: creates a new array with an element added to the end

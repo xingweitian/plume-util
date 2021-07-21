@@ -74,7 +74,7 @@ public final class ArraysPlume {
     "index:array.access.unsafe.high" // addition in array length
   })
   public static <T> T[] append(T[] array, T lastElt) {
-    @SuppressWarnings({"unchecked", "nullness:assignment.type.incompatible"})
+    @SuppressWarnings({"unchecked", "nullness:assignment"})
     T[] result = Arrays.copyOf(array, array.length + 1);
     result[array.length] = lastElt;
     return result;
@@ -1632,7 +1632,7 @@ public final class ArraysPlume {
    */
   @SuppressWarnings({
     "unchecked",
-    "index:argument.type.incompatible" // addition for array length
+    "index:argument" // addition for array length
   })
   public static <T> T[] concatenate(T[] array1, T... array2) {
     @SuppressWarnings("nullness") // elements are not non-null yet, but will be by return stmt
@@ -1754,8 +1754,8 @@ public final class ArraysPlume {
      * @param destPos the index at which to start overwriting elements of {@code dest}
      */
     @SuppressWarnings({
-      "lowerbound:argument.type.incompatible", // TODO: annotate for Index Checker
-      "index:argument.type.incompatible" // TODO: annotate for Index Checker
+      "lowerbound:argument", // TODO: annotate for Index Checker
+      "index:argument" // TODO: annotate for Index Checker
     })
     void copyInto(T[] dest, int destPos) {
       if (theArray != null) {
@@ -1763,8 +1763,8 @@ public final class ArraysPlume {
       } else if (theList != null) {
         for (int i = 0; i < theList.size(); i++) {
           @SuppressWarnings({
-            "lowerbound:assignment.type.incompatible",
-            "index:assignment.type.incompatible"
+            "lowerbound:assignment",
+            "index:assignment"
           }) // index checker has no list support
           @IndexFor("dest") int index = i + destPos;
           dest[index] = theList.get(i);
@@ -3069,6 +3069,7 @@ public final class ArraysPlume {
    * {@code equals()} (which tests reference equality).
    */
   public static final class IntArrayComparatorLexical implements Comparator<int[]>, Serializable {
+    /** Unique identifier for serialization. If you add or remove fields, change this number. */
     static final long serialVersionUID = 20150812L;
 
     /**
@@ -3104,6 +3105,7 @@ public final class ArraysPlume {
    * {@code equals()} (which tests reference equality).
    */
   public static final class LongArrayComparatorLexical implements Comparator<long[]>, Serializable {
+    /** Unique identifier for serialization. If you add or remove fields, change this number. */
     static final long serialVersionUID = 20150812L;
 
     /**
@@ -3140,6 +3142,7 @@ public final class ArraysPlume {
    */
   public static final class DoubleArrayComparatorLexical
       implements Comparator<double[]>, Serializable {
+    /** Unique identifier for serialization. If you add or remove fields, change this number. */
     static final long serialVersionUID = 20150812L;
 
     /**
@@ -3177,6 +3180,7 @@ public final class ArraysPlume {
    */
   public static final class StringArrayComparatorLexical
       implements Comparator<String[]>, Serializable {
+    /** Unique identifier for serialization. If you add or remove fields, change this number. */
     static final long serialVersionUID = 20150812L;
 
     /**
@@ -3227,6 +3231,7 @@ public final class ArraysPlume {
    */
   public static final class ComparableArrayComparatorLexical<T extends Comparable<T>>
       implements Comparator<T[]>, Serializable {
+    /** Unique identifier for serialization. If you add or remove fields, change this number. */
     static final long serialVersionUID = 20150812L;
 
     /**
@@ -3286,6 +3291,7 @@ public final class ArraysPlume {
    */
   public static final class ObjectArrayComparatorLexical
       implements Comparator<Object[]>, Serializable {
+    /** Unique identifier for serialization. If you add or remove fields, change this number. */
     static final long serialVersionUID = 20150812L;
 
     /**
@@ -3327,6 +3333,7 @@ public final class ArraysPlume {
    */
   public static final class IntArrayComparatorLengthFirst
       implements Comparator<int[]>, Serializable {
+    /** Unique identifier for serialization. If you add or remove fields, change this number. */
     static final long serialVersionUID = 20150812L;
 
     /**
@@ -3365,6 +3372,7 @@ public final class ArraysPlume {
    */
   public static final class LongArrayComparatorLengthFirst
       implements Comparator<long[]>, Serializable {
+    /** Unique identifier for serialization. If you add or remove fields, change this number. */
     static final long serialVersionUID = 20150812L;
 
     /**
@@ -3403,6 +3411,7 @@ public final class ArraysPlume {
    */
   public static final class ComparableArrayComparatorLengthFirst<T extends Comparable<T>>
       implements Comparator<T[]>, Serializable {
+    /** Unique identifier for serialization. If you add or remove fields, change this number. */
     static final long serialVersionUID = 20150812L;
 
     /**
@@ -3468,6 +3477,7 @@ public final class ArraysPlume {
    */
   public static final class ObjectArrayComparatorLengthFirst
       implements Comparator<Object[]>, Serializable {
+    /** Unique identifier for serialization. If you add or remove fields, change this number. */
     static final long serialVersionUID = 20150812L;
 
     /**
@@ -3668,6 +3678,7 @@ public final class ArraysPlume {
   /** A partitioning is a set of sets. It adds a few methods to {@code ArrayList<ArrayList<T>>}. */
   static class Partitioning<T extends @NonNull Object> extends ArrayList<ArrayList<T>> {
 
+    /** Unique identifier for serialization. If you add or remove fields, change this number. */
     static final long serialVersionUID = 20170418;
 
     /** Empty constructor. */

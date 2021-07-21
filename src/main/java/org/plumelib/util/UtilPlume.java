@@ -61,7 +61,6 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
  * Utility methods that do not belong elsewhere in the plume package: BitSet; hashing;
  * ProcessBuilder; properties; Throwable.
  */
-@SuppressWarnings("objectconstruction") // File methods in this class are deprecated
 public final class UtilPlume {
 
   /** This class is a collection of methods; it does not represent anything. */
@@ -73,7 +72,7 @@ public final class UtilPlume {
   private static final String lineSep = System.lineSeparator();
 
   ///////////////////////////////////////////////////////////////////////////
-  /// BitSet
+  /// BitSet (this section is deprecated in favor of CollectionsPlume)
   ///
 
   /**
@@ -84,7 +83,9 @@ public final class UtilPlume {
    * @param b the second BitSet to intersect
    * @param i the cardinality bound
    * @return true iff size(a intersect b) &ge; i
+   * @deprecated use CollectionsPlume.intersectionCardinalityAtLeast
    */
+  @Deprecated // 2021-04-24
   @SuppressWarnings({"allcheckers:purity", "lock"}) // side effect to local state (BitSet)
   @Pure
   public static boolean intersectionCardinalityAtLeast(BitSet a, BitSet b, @NonNegative int i) {
@@ -120,7 +121,9 @@ public final class UtilPlume {
    * @param c the third BitSet to intersect
    * @param i the cardinality bound
    * @return true iff size(a intersect b intersect c) &ge; i
+   * @deprecated use CollectionsPlume.intersectionCardinalityAtLeast
    */
+  @Deprecated // 2021-04-24
   @SuppressWarnings({"allcheckers:purity", "lock"}) // side effect to local state (BitSet)
   @Pure
   public static boolean intersectionCardinalityAtLeast(
@@ -149,7 +152,9 @@ public final class UtilPlume {
    * @param a the first BitSet to intersect
    * @param b the second BitSet to intersect
    * @return size(a intersect b)
+   * @deprecated use CollectionsPlume.intersectionCardinality
    */
+  @Deprecated // 2021-04-24
   @SuppressWarnings({"allcheckers:purity", "lock"}) // side effect to local state (BitSet)
   @Pure
   public static int intersectionCardinality(BitSet a, BitSet b) {
@@ -165,7 +170,9 @@ public final class UtilPlume {
    * @param b the second BitSet to intersect
    * @param c the third BitSet to intersect
    * @return size(a intersect b intersect c)
+   * @deprecated use CollectionsPlume.intersectionCardinality
    */
+  @Deprecated // 2021-04-24
   @SuppressWarnings({"allcheckers:purity", "lock"}) // side effect to local state (BitSet)
   @Pure
   public static int intersectionCardinality(BitSet a, BitSet b, BitSet c) {
@@ -1255,7 +1262,7 @@ public final class UtilPlume {
   }
 
   ///////////////////////////////////////////////////////////////////////////
-  /// Map (this section is deprecated and has been moved to StringsPlume)
+  /// Map (this section is deprecated in favor of StringsPlume)
   ///
 
   /**
@@ -1526,7 +1533,7 @@ public final class UtilPlume {
    *     target if it does not start with oldStr
    * @deprecated use {@link StringsPlume#replacePrefix}
    */
-  @SuppressWarnings("index:argument.type.incompatible") // startsWith implies indexes fit
+  @SuppressWarnings("index:argument") // startsWith implies indexes fit
   @Deprecated // use StringsPlume.replacePrefix; deprecated 2020-12-02
   public static String replacePrefix(String target, String oldStr, String newStr) {
     if (target.startsWith(oldStr)) {
@@ -1554,7 +1561,7 @@ public final class UtilPlume {
    *     target if it does not start with oldStr
    * @deprecated use {@link StringsPlume#replaceSuffix}
    */
-  @SuppressWarnings("lowerbound:argument.type.incompatible") // endsWith implies indexes fit
+  @SuppressWarnings("lowerbound:argument") // endsWith implies indexes fit
   @Deprecated // use StringsPlume.replaceSuffix; deprecated 2020-12-02
   public static String replaceSuffix(String target, String oldStr, String newStr) {
     if (target.endsWith(oldStr)) {
@@ -2376,19 +2383,22 @@ public final class UtilPlume {
    * @deprecated use {@link StringsPlume.NullableStringComparator}
    */
   @Deprecated // use StringsPlume.NullableStringComparator; deprecated 2020-12-02
-  public static class NullableStringComparator implements Comparator<String>, Serializable {
+  public static class NullableStringComparator
+      implements Comparator<@Nullable String>, Serializable {
+    /** Unique identifier for serialization. If you add or remove fields, change this number. */
     static final long serialVersionUID = 20150812L;
 
     @Pure
     @Override
-    public int compare(String s1, String s2) {
-      if (s1 == null && s2 == null) {
-        return 0;
+    public int compare(@Nullable String s1, @Nullable String s2) {
+      if (s1 == null) {
+        if (s2 == null) {
+          return 0;
+        } else {
+          return 1;
+        }
       }
-      if (s1 == null && s2 != null) {
-        return 1;
-      }
-      if (s1 != null && s2 == null) {
+      if (s2 == null) {
         return -1;
       }
       return s1.compareTo(s2);
@@ -2409,6 +2419,7 @@ public final class UtilPlume {
    */
   @Deprecated // use StringsPlume.ObjectComparator; deprecated 2020-12-02
   public static class ObjectComparator implements Comparator<@Nullable Object>, Serializable {
+    /** Unique identifier for serialization. If you add or remove fields, change this number. */
     static final long serialVersionUID = 20170420L;
 
     @SuppressWarnings({
@@ -2541,7 +2552,7 @@ public final class UtilPlume {
     while (matcher.find()) {
       String argumentIndex = matcher.group(1);
       if (argumentIndex != null) {
-        @SuppressWarnings("lowerbound:argument.type.incompatible") // group contains >= 2 chars
+        @SuppressWarnings("lowerbound:argument") // group contains >= 2 chars
         int thisIndex = Integer.parseInt(argumentIndex.substring(0, argumentIndex.length() - 1));
         maxIndex = Math.max(maxIndex, thisIndex);
         continue;

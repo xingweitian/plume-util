@@ -19,6 +19,7 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
  * exception occurred. It requires use of a {@link LineNumberReader}.
  */
 public class FileIOException extends IOException {
+  /** Unique identifier for serialization. If you add or remove fields, change this number. */
   static final long serialVersionUID = 20050923L;
 
   /** The file being read when the IOException occurred. */
@@ -270,7 +271,7 @@ public class FileIOException extends IOException {
   /// Utility and helper methods
   ///
 
-  @SuppressWarnings("lock:override.sideeffect.invalid") // temporary until after CF 3.0.1
+  @SuppressWarnings("lock:override.sideeffect") // temporary until after CF 3.0.1
   @SideEffectFree
   @Override
   public String getMessage(@GuardSatisfied FileIOException this) {

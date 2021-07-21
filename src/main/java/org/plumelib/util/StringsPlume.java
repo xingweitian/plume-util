@@ -56,7 +56,7 @@ public final class StringsPlume {
    * @return the target with an occurrence of oldStr at the start replaced by newStr; returns the
    *     target if it does not start with oldStr
    */
-  @SuppressWarnings("index:argument.type.incompatible") // startsWith implies indexes fit
+  @SuppressWarnings("index:argument") // startsWith implies indexes fit
   @SideEffectFree
   public static String replacePrefix(String target, String oldStr, String newStr) {
     if (target.startsWith(oldStr)) {
@@ -83,7 +83,7 @@ public final class StringsPlume {
    * @return the target with an occurrence of oldStr at the start replaced by newStr; returns the
    *     target if it does not start with oldStr
    */
-  @SuppressWarnings("lowerbound:argument.type.incompatible") // endsWith implies indexes fit
+  @SuppressWarnings("lowerbound:argument") // endsWith implies indexes fit
   @SideEffectFree
   public static String replaceSuffix(String target, String oldStr, String newStr) {
     if (target.endsWith(oldStr)) {
@@ -844,6 +844,7 @@ public final class StringsPlume {
   @Deprecated // deprecated 2021-02-27
   public static class NullableStringComparator
       implements Comparator<@Nullable String>, Serializable {
+    /** Unique identifier for serialization. If you add or remove fields, change this number. */
     static final long serialVersionUID = 20150812L;
 
     /**
@@ -883,6 +884,7 @@ public final class StringsPlume {
    * {@code Object} is not {@code Comparable}.
    */
   public static class ObjectComparator implements Comparator<@Nullable Object>, Serializable {
+    /** Unique identifier for serialization. If you add or remove fields, change this number. */
     static final long serialVersionUID = 20170420L;
 
     /**
@@ -1316,7 +1318,7 @@ public final class StringsPlume {
     while (matcher.find()) {
       String argumentIndex = matcher.group(1);
       if (argumentIndex != null) {
-        @SuppressWarnings("lowerbound:argument.type.incompatible") // group contains >= 2 chars
+        @SuppressWarnings("lowerbound:argument") // group contains >= 2 chars
         int thisIndex = Integer.parseInt(argumentIndex.substring(0, argumentIndex.length() - 1));
         maxIndex = Math.max(maxIndex, thisIndex);
         continue;

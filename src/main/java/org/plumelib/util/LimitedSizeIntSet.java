@@ -28,9 +28,7 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 //    * @deprecated use {@link LimitedSizeSet}
 //   @Deprecated
 public class LimitedSizeIntSet implements Serializable, Cloneable {
-  // We are Serializable, so we specify a version to allow changes to
-  // method signatures without breaking serialization.  If you add or
-  // remove fields, you should change this number to the current date.
+  /** Unique identifier for serialization. If you add or remove fields, change this number. */
   static final long serialVersionUID = 20031021L;
 
   /**
@@ -117,8 +115,7 @@ public class LimitedSizeIntSet implements Serializable, Cloneable {
     int[] svalues = s.values;
     for (int i = 0; i < s.size(); i++) {
       @SuppressWarnings(
-          "index:assignment.type.incompatible" // svalues is the internal rep of s, and s.size() <=
-      // s.values.length
+          "index:assignment" // svalues is the internal rep of s, and s.size() <= s.values.length
       )
       @IndexFor("svalues") int index = i;
       add(svalues[index]);

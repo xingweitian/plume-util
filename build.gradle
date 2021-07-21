@@ -10,10 +10,10 @@ plugins {
   // id 'com.github.sherter.google-java-format' version '0.7.1'
 
   // Error Prone linter
-  id("net.ltgt.errorprone") version "2.0.1"
+  id("net.ltgt.errorprone") version "2.0.2"
 
   // Checker Framework pluggable type-checking
-  id 'org.checkerframework' version '0.5.19'
+  id 'org.checkerframework' version '0.5.23'
 }
 
 repositories {
@@ -23,9 +23,9 @@ repositories {
 dependencies {
   implementation 'org.plumelib:reflection-util:1.0.3'
 
-  errorprone 'com.google.errorprone:error_prone_core:2.6.0'
+  errorprone 'com.google.errorprone:error_prone_core:2.7.1'
 
-  testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.1'
+  testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.2'
   testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
 }
 
@@ -59,6 +59,9 @@ tasks.withType(JavaCompile).configureEach {
   options.errorprone {
     // Code copied from the JDK that we don't want to change gratuitously.
     excludedPaths = ".*/Weak.*Hash(er)?Map.java"
+    disable(
+        // The suggestion recommends an Error-Prone-specific annotation
+        "InlineMeSuggester")
   }
   options.forkOptions.jvmArgs += "-Xmx2g"
 }
@@ -67,9 +70,6 @@ tasks.withType(JavaCompile).configureEach {
 
 apply plugin: 'org.checkerframework'
 
-dependencies {
-    implementation 'net.sridharan.objectconstruction:object-construction-qual:0.1.12'
-}
 checkerFramework {
   checkers = [
     'org.checkerframework.checker.formatter.FormatterChecker',
@@ -96,16 +96,6 @@ if (project.hasProperty("cfLocal")) {
     testCompileOnly files(cfHome + "/checker/dist/checker-qual.jar")
     checkerFramework files(cfHome + "/checker/dist/checker.jar")
   }
-} else {
-  dependencies {
-    checkerFramework 'net.sridharan.objectconstruction:object-construction-checker:0.1.12'
-  }
-  checkerFramework.checkers += 'org.checkerframework.checker.objectconstruction.ObjectConstructionChecker'
-  checkerFramework.extraJavacArgs += [
-    '-AcheckMustCall',
-    // '-ACalledMethodsChecker_disableReturnsReceiver' would also work.
-    '-AdisableReturnsReceiver', // because this code does not use fluent APIs
-  ]
 }
 
 
@@ -154,11 +144,11 @@ configurations {
   requireJavadoc
 }
 dependencies {
-  requireJavadoc "org.plumelib:require-javadoc:1.0.1"
+  requireJavadoc "org.plumelib:require-javadoc:1.0.2"
 }
 task requireJavadoc(type: JavaExec) {
   description = 'Ensures that Javadoc documentation exists.'
-  main = "org.plumelib.javadoc.RequireJavadoc"
+  mainClass = "org.plumelib.javadoc.RequireJavadoc"
   classpath = configurations.requireJavadoc
   args "src/main/java", "--dont-require=WeakHasherMap|WeakIdentityHashMap"
 }
