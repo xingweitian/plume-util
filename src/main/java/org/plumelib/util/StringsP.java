@@ -1,0 +1,2069 @@
+// If you edit this file, you must also edit its tests.
+
+package org.plumelib.util;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.StringJoiner;
+import java.util.StringTokenizer;
+import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.index.qual.LTEqLengthOf;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.mustcall.qual.MustCallUnknown;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.PolyNull;
+import org.checkerframework.checker.regex.qual.Regex;
+import org.checkerframework.checker.signedness.qual.Signed;
+import org.checkerframework.common.value.qual.StaticallyExecutable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
+// The list of features is everything that appears on a line starting with "  /// ".
+/**
+ * Utility functions that manipulate Strings: replacement; prefixing and indentation; splitting and
+ * joining; quoting and escaping; whitespace; comparisons; StringTokenizer; debugging variants of
+ * toString; diagnostic output; miscellaneous.
+ */
+public final class StringsP {
+
+  /** This class is a collection of methods; it does not represent anything. */
+  private StringsP() {
+    throw new UnsupportedOperationException("do not instantiate");
+  }
+
+  /** The system-specific line separator string. */
+  private static final String LINE_SEP = System.lineSeparator();
+
+  // //////////////////////////////////////////////////////////////////////
+  // Replacement
+  //
+
+  /**
+   * Returns the target with an occurrence of oldStr at the start replaced by newStr. Returns the
+   * target if it does not start with oldStr.
+   *
+   * <p>An alternative to this is to use regular expressions: {@code target.replaceFirst("^" +
+   * Pattern.quote(oldStr), Matcher.quoteReplacement(newStr))}. The call to {@code
+   * Matcher.quoteReplacement} is necessary because {@code replaceFirst} treats {@code $} and {@code
+   * \} in its second argument specially.
+   *
+   * @param target the string to do replacement in
+   * @param oldStr the prefix to replace
+   * @param newStr the replacement
+   * @return the target with an occurrence of oldStr at the start replaced by newStr; returns the
+   *     target if it does not start with oldStr
+   */
+  @SideEffectFree
+  public static String replacePrefix(String target, String oldStr, String newStr) {
+    if (target.startsWith(oldStr)) {
+      if (newStr.isEmpty()) {
+        return target.substring(oldStr.length());
+      } else {
+        return newStr + target.substring(oldStr.length());
+      }
+    } else {
+      return target;
+    }
+  }
+
+  /**
+   * Returns the target with an occurrence of oldStr at the end replaced by newStr. Returns the
+   * target if it does not end with oldStr.
+   *
+   * <p>An alternative to this is to use regular expressions: {@code
+   * target.replaceAll(Pattern.quote(oldStr) + "\\z", Matcher.quoteReplacement(newStr))}. The anchor
+   * is {@code \z} rather than {@code $} because {@code $} also matches before a line terminator at
+   * the end of the target. The call to {@code Matcher.quoteReplacement} is necessary because {@code
+   * replaceAll} treats {@code $} and {@code \} in its second argument specially.
+   *
+   * @param target the string to do replacement in
+   * @param oldStr the suffix to replace
+   * @param newStr the replacement
+   * @return the target with an occurrence of oldStr at the end replaced by newStr; returns the
+   *     target if it does not end with oldStr
+   */
+  @SuppressWarnings("lowerbound:argument") // endsWith implies indexes fit
+  @SideEffectFree
+  public static String replaceSuffix(String target, String oldStr, String newStr) {
+    if (target.endsWith(oldStr)) {
+      if (newStr.isEmpty()) {
+        return target.substring(0, target.length() - oldStr.length());
+      } else {
+        return target.substring(0, target.length() - oldStr.length()) + newStr;
+      }
+    } else {
+      return target;
+    }
+  }
+
+  /**
+   * Replaces every (non-overlapping) match for a regexp. Like {@code String.replaceAll}, but
+   * slightly more efficient because the regex has been pre-compiled.
+   *
+   * @param s a string in which to replace
+   * @param regex a regular expression
+   * @param replacement the replacement for each match of the regular expression
+   * @return the string, with each match for the regex replaced
+   */
+  @SideEffectFree
+  public static String replaceAll(String s, Pattern regex, String replacement) {
+    Matcher m = regex.matcher(s);
+    return m.replaceAll(replacement);
+  }
+
+  // //////////////////////////////////////////////////////////////////////
+  // Prefixing and indentation
+  //
+
+  /**
+   * Returns the printed representation of a value, with each line prefixed by another string.
+   *
+   * @param prefix the prefix to place before each line
+   * @param o the value to be printed
+   * @return the printed representation of {@code o}, with each line prefixed by the given prefix
+   */
+  @SideEffectFree
+  public static String prefixLines(String prefix, @Nullable Object o) {
+    return prefix + prefixLinesExceptFirst(prefix, o);
+  }
+
+  /**
+   * Returns the printed representation of a value, with each line (except the first) prefixed by
+   * another string.
+   *
+   * @param prefix the prefix to place before each line
+   * @param o the value to be printed
+   * @return the printed representation of {@code o}, with each line (except the first) prefixed by
+   *     the given prefix
+   */
+  @SideEffectFree
+  public static String prefixLinesExceptFirst(String prefix, @Nullable Object o) {
+    if (o == null) {
+      return "null";
+    }
+    return o.toString().replace(LINE_SEP, LINE_SEP + prefix);
+  }
+
+  /**
+   * Returns the printed representation of a value, with each line indented by {@code indent}
+   * spaces.
+   *
+   * @param indent the number of spaces to indent
+   * @param o the value whose printed representation string to increase indentation of
+   * @return the printed representation of {@code o}, with each line prefixed by {@code indent}
+   *     space characters
+   */
+  @SideEffectFree
+  public static String indentLines(@NonNegative int indent, @Nullable Object o) {
+    if (indent == 0) {
+      return (o == null) ? "null" : o.toString();
+    }
+    String prefix = " ".repeat(indent);
+    return prefixLines(prefix, o);
+  }
+
+  /**
+   * Returns the printed representation of a value, with each line (except the first) indented by
+   * {@code indent} spaces.
+   *
+   * @param indent the number of spaces to indent
+   * @param o the value whose printed representation string to increase indentation of
+   * @return the printed representation of {@code o}, with each line (except the first) prefixed by
+   *     {@code indent} space characters
+   */
+  @SideEffectFree
+  public static String indentLinesExceptFirst(@NonNegative int indent, @Nullable Object o) {
+    if (indent == 0) {
+      return (o == null) ? "null" : o.toString();
+    }
+    String prefix = " ".repeat(indent);
+    return prefixLinesExceptFirst(prefix, o);
+  }
+
+  // //////////////////////////////////////////////////////////////////////
+  // Splitting and joining
+  //
+
+  /** A pattern that matches all common line separators: lf, cr, cr-lf. */
+  private static Pattern allLineSeparators = Pattern.compile("\\R");
+
+  /**
+   * Returns an array of Strings, one for each line in the argument. The strings do <b>not</b> end
+   * with line separators. Always returns an array of length at least 1 (it might contain only the
+   * empty string). All common line separators (lf, cr, cr-lf) are supported. Note that a string
+   * that ends with a line separator will return an empty string as the last element of the array.
+   *
+   * <p>It is probably better to use {@code String.lines()} rather than this method.
+   *
+   * <p>Alternately, you could use {@link #firstLineSeparator} and split on its return value.
+   *
+   * @param s the string to split
+   * @return an array of Strings, one for each line in the argument
+   */
+  @SuppressWarnings("value:statically.executable.not.pure") // pure wrt `equals()` but not `==`
+  @SideEffectFree
+  @StaticallyExecutable
+  public static String[] splitLines(String s) {
+    return allLineSeparators.split(s, -1);
+  }
+
+  /**
+   * Returns the first line separator in the given string, or null if the string contains none.
+   *
+   * @param s a string
+   * @return the first line separator in the given string
+   */
+  @SuppressWarnings({
+    "regex:return", // all matches of allLineSeparators are regexes
+    "allcheckers:purity.call", // side effect to local state
+    "lock:method.guarantee.violated" // side effect to local state
+  })
+  @SideEffectFree
+  public static @Nullable @Regex String firstLineSeparator(String s) {
+    Matcher m = allLineSeparators.matcher(s);
+    if (m.find()) {
+      return m.group();
+    } else {
+      return null;
+    }
+  }
+
+  /**
+   * Splits a String into lines, keeping the line separator at the end of each substring.
+   *
+   * @param input the input String
+   * @return the split string
+   */
+  @SideEffectFree
+  public static @Modifiable List<String> splitLinesRetainSeparators(String input) {
+    return splitRetainSeparators(input, allLineSeparators);
+  }
+
+  /**
+   * Splits a String according to a regex, keeping the separator at the end of each substring.
+   *
+   * @param input the input String
+   * @param regex the regular expression upon which to split the input
+   * @return the split string
+   */
+  @SideEffectFree
+  public static @Modifiable List<String> splitRetainSeparators(String input, @Regex String regex) {
+    return splitRetainSeparators(input, Pattern.compile(regex));
+  }
+
+  /**
+   * Splits a String according to a pattern, keeping the separator at the end of each substring.
+   *
+   * @param input the input String
+   * @param p the pattern upon which to split the input
+   * @return the split string
+   */
+  @SuppressWarnings({
+    "index:argument", // m.end is @LTLengthOf("index")
+    "allcheckers:purity.call", // side effect to local state
+    "lock:method.guarantee.violated" // needs JDK annotations
+  })
+  @SideEffectFree
+  public static @Modifiable List<String> splitRetainSeparators(String input, Pattern p) {
+    List<String> result = new ArrayList<>();
+    Matcher m = p.matcher(input);
+    int pos = 0;
+    while (m.find()) {
+      result.add(input.substring(pos, m.end()));
+      pos = m.end();
+    }
+    if (pos < input.length()) {
+      result.add(input.substring(pos));
+    }
+    return result;
+  }
+
+  /**
+   * Concatenate the string representations of the array elements, placing the delimiter between
+   * them.
+   *
+   * <p>This differs from the built-in {@code String.join()} method added in Java 8, in that this
+   * takes any arbitrary array but that method takes an array of CharSequences. Use the String
+   * method when the arguments are CharSequences.
+   *
+   * @param <T> the type of array elements
+   * @param a array of values to concatenate
+   * @param delim delimiter to place between printed representations
+   * @return the concatenation of the string representations of the values, with the delimiter
+   *     between
+   */
+  @SuppressWarnings({
+    "lock:method.guarantee.violated", // side effect to local state
+    "allcheckers:purity.call" // side effect to local state
+  })
+  @SafeVarargs
+  @SideEffectFree
+  public static <T extends @MustCallUnknown Object> String join(
+      CharSequence delim, @Signed T... a) {
+    StringJoiner sj = new StringJoiner(delim);
+    for (T elt : a) {
+      sj.add(String.valueOf(elt));
+    }
+    return sj.toString();
+  }
+
+  /**
+   * Concatenate the string representations of the objects, placing the system-specific line
+   * separator between them.
+   *
+   * @param <T> the type of array elements
+   * @param a array of values whose string representation to concatenate
+   * @return the concatenation of the string representations of the values, each on its own line
+   */
+  @SafeVarargs
+  @SuppressWarnings("varargs")
+  @SideEffectFree
+  public static <T extends @MustCallUnknown Object> String joinLines(@Signed T... a) {
+    return join(LINE_SEP, a);
+  }
+
+  /**
+   * Concatenate the string representations of the objects, placing the delimiter between them.
+   *
+   * <p>This differs from the {@code String.join()} method added in Java 8, in that this takes any
+   * Iterable but that method takes only {@code Iterable<? extends CharSequence>}.
+   *
+   * @see java.util.AbstractCollection#toString()
+   * @param v collection of values to concatenate
+   * @param delim delimiter to place between printed representations
+   * @return the concatenation of the string representations of the values, with the delimiter
+   *     between
+   */
+  @SuppressWarnings({
+    "lock:method.guarantee.violated", // side effect to local state
+    "allcheckers:purity.call", // side effect to local state
+  })
+  @SideEffectFree
+  public static String join(
+      CharSequence delim,
+      @MustCallUnknown Iterable<? extends @Signed @PolyNull @MustCallUnknown Object> v) {
+    StringJoiner sj = new StringJoiner(delim);
+    for (@Signed @PolyNull Object elt : v) {
+      sj.add(String.valueOf(elt));
+    }
+    return sj.toString();
+  }
+
+  /**
+   * Concatenate the string representations of the objects, placing the system-specific line
+   * separator between them.
+   *
+   * @see java.util.AbstractCollection#toString()
+   * @param v list of values to concatenate
+   * @return the concatenation of the string representations of the values, each on its own line
+   */
+  @SideEffectFree
+  public static String joinLines(
+      @MustCallUnknown Iterable<? extends @Signed @PolyNull @MustCallUnknown Object> v) {
+    return join(LINE_SEP, v);
+  }
+
+  // //////////////////////////////////////////////////////////////////////
+  // Quoting and escaping
+  //
+
+  /**
+   * Escapes a String so that it is expressible in a string literal in Java source code. By
+   * surrounding the return value with double quote marks, the result will be a Java string literal
+   * denoting the original string.
+   *
+   * <p>Returns a new string only if any modifications were necessary.
+   *
+   * <p>Compared to the `escapeJava` method in Apache Commons Text StringEscapeUtils, this one
+   * correctly handles non-printable ASCII characters.
+   *
+   * @param orig string to quote
+   * @return quoted version of orig
+   */
+  @SuppressWarnings({
+    "lock:method.guarantee.violated", // side effect to local state
+    "allcheckers:purity.call" // side effect to local state
+  })
+  @SideEffectFree
+  public static String escapeJava(String orig) {
+    StringBuilder result = new StringBuilder();
+    // The previous escape character was seen right before this position.
+    @IndexOrHigh("orig") int postEsc = 0;
+    int origLen = orig.length();
+    for (int i = 0; i < origLen; i++) {
+      char c = orig.charAt(i);
+      switch (c) {
+        case '\"' -> {
+          if (postEsc < i) {
+            result.append(orig.substring(postEsc, i));
+          }
+          result.append("\\\"");
+          postEsc = i + 1;
+        }
+        case '\\' -> {
+          if (postEsc < i) {
+            result.append(orig.substring(postEsc, i));
+          }
+          result.append("\\\\");
+          postEsc = i + 1;
+        }
+        case '\b' -> {
+          if (postEsc < i) {
+            result.append(orig.substring(postEsc, i));
+          }
+          result.append("\\b");
+          postEsc = i + 1;
+        }
+        case '\f' -> {
+          if (postEsc < i) {
+            result.append(orig.substring(postEsc, i));
+          }
+          result.append("\\f");
+          postEsc = i + 1;
+        }
+        case '\n' -> { // '\n', not LINE_SEP
+          if (postEsc < i) {
+            result.append(orig.substring(postEsc, i));
+          }
+          result.append("\\n"); // not LINE_SEP
+          postEsc = i + 1;
+        }
+        case '\r' -> {
+          if (postEsc < i) {
+            result.append(orig.substring(postEsc, i));
+          }
+          result.append("\\r");
+          postEsc = i + 1;
+        }
+        case '\t' -> {
+          if (postEsc < i) {
+            result.append(orig.substring(postEsc, i));
+          }
+          result.append("\\t");
+          postEsc = i + 1;
+        }
+
+        default -> {
+          if (c >= ' ' && c <= '~') {
+            // Nothing to do: i gets incremented
+          } else if (c <= '\377') {
+            if (postEsc < i) {
+              result.append(orig.substring(postEsc, i));
+            }
+            result.append('\\');
+            int cAsInt = (int) c;
+            result.append(String.format("%03o", cAsInt));
+            postEsc = i + 1;
+          } else {
+            if (postEsc < i) {
+              result.append(orig.substring(postEsc, i));
+            }
+            result.append("\\u");
+            result.append(String.format("%04x", (int) c));
+            postEsc = i + 1;
+          }
+        }
+      }
+    }
+    if (result.length() == 0) {
+      return orig;
+    }
+    result.append(orig.substring(postEsc));
+    return result.toString();
+  }
+
+  /**
+   * Given a character, returns a Java character literal denoting the character. The return value
+   * begins and ends with a single quote mark.
+   *
+   * @param ch character to quote
+   * @return quoted version of ch
+   */
+  @SideEffectFree
+  public static String charLiteral(Character ch) {
+    return charLiteral(ch.charValue());
+  }
+
+  /**
+   * Given a character, returns a Java character literal denoting the character.
+   *
+   * @param c character to quote
+   * @return quoted version of c
+   */
+  @SideEffectFree
+  public static String charLiteral(char c) {
+    return switch (c) {
+      case '\'' -> "'\\''";
+      case '\\' -> "'\\\\'";
+      case '\b' -> "'\\b'";
+      case '\f' -> "'\\f'";
+      case '\n' -> "'\\n'"; // '\n', not LINE_SEP
+      case '\r' -> "'\\r'";
+      case '\t' -> "'\\t'";
+      default -> "'" + c + "'";
+    };
+  }
+
+  /**
+   * Escape unprintable characters in the target, following the usual Java backslash conventions, so
+   * that the result is sure to be printable ASCII. Returns a new string.
+   *
+   * <p>This implementation is not particularly optimized: unlike {@link #escapeJava(String)}, it
+   * allocates a string per character rather than copying unescaped runs in bulk.
+   *
+   * @param orig string to quote
+   * @return quoted version of orig
+   */
+  @SuppressWarnings({
+    "lock:method.guarantee.violated", // side effect to local state
+    "allcheckers:purity.call" // side effect to local state
+  })
+  @SideEffectFree
+  public static String escapeNonASCII(String orig) {
+    StringBuilder result = new StringBuilder();
+    int origLen = orig.length();
+    for (int i = 0; i < origLen; i++) {
+      char c = orig.charAt(i);
+      result.append(escapeNonASCII(c));
+    }
+    return result.toString();
+  }
+
+  /**
+   * Like escapeJava(), but quote more characters so that the result is sure to be printable ASCII.
+   *
+   * @param c character to quote
+   * @return quoted version of c
+   */
+  @SideEffectFree
+  private static String escapeNonASCII(char c) {
+    if (c == '"') {
+      return "\\\"";
+    } else if (c == '\\') {
+      return "\\\\";
+    } else if (c == '\n') { // not LINE_SEP
+      return "\\n"; // not LINE_SEP
+    } else if (c == '\r') {
+      return "\\r";
+    } else if (c == '\t') {
+      return "\\t";
+    } else if (c >= ' ' && c <= '~') {
+      return new String(new char[] {c});
+    } else if (c < 256) {
+      return new String(
+          new char[] {
+            '\\', (char) ('0' + (c >> 6)), (char) ('0' + ((c >> 3) & 7)), (char) ('0' + (c & 7))
+          });
+    } else {
+      return new String(
+          new char[] {
+            '\\',
+            'u',
+            Character.forDigit((c >> 12) & 0xf, 16),
+            Character.forDigit((c >> 8) & 0xf, 16),
+            Character.forDigit((c >> 4) & 0xf, 16),
+            Character.forDigit(c & 0xf, 16)
+          });
+    }
+  }
+
+  /**
+   * Convert a string from Java source code format (with escape sequences) into the string it would
+   * represent at run time. This is the inverse operation of {@link #escapeJava}, but it is
+   * <em>not</em> a general unescaping mechanism for Java strings.
+   *
+   * <p>Compared to the `unescapeJava` method in Apache Commons Text StringEscapeUtils, this one
+   * correctly handles non-printable ASCII characters.
+   *
+   * <p>This method never throws an exception on malformed input. A Unicode escape is more liberal
+   * than the Java specification permits: it accepts fewer than 4 hexadecimal digits, and it yields
+   * the null character if no hexadecimal digit follows. An octal escape ends at the first character
+   * that is not an octal digit, or before the digit that would make the value exceed {@code 0xFF};
+   * this matches the Java specification.
+   *
+   * @param orig string to quote
+   * @return quoted version of orig
+   */
+  @SuppressWarnings({
+    "lock:method.guarantee.violated", // side effect to local state
+    "allcheckers:purity.call" // side effect to local state
+  })
+  @SideEffectFree
+  public static String unescapeJava(String orig) {
+    StringBuilder result = new StringBuilder();
+    // The previous escape character was seen just before this position.
+    @LTEqLengthOf("orig") int postEsc = 0;
+    int thisEsc = orig.indexOf('\\');
+    while (thisEsc != -1) {
+      if (thisEsc == orig.length() - 1) {
+        result.append(orig.substring(postEsc, thisEsc + 1));
+        postEsc = thisEsc + 1;
+        break;
+      }
+      switch (orig.charAt(thisEsc + 1)) {
+        case 'b' -> {
+          result.append(orig.substring(postEsc, thisEsc));
+          result.append('\b');
+          postEsc = thisEsc + 2;
+        }
+        case 'f' -> {
+          result.append(orig.substring(postEsc, thisEsc));
+          result.append('\f');
+          postEsc = thisEsc + 2;
+        }
+        case 'n' -> {
+          result.append(orig.substring(postEsc, thisEsc));
+          result.append('\n'); // not LINE_SEP
+          postEsc = thisEsc + 2;
+        }
+        case 'r' -> {
+          result.append(orig.substring(postEsc, thisEsc));
+          result.append('\r');
+          postEsc = thisEsc + 2;
+        }
+        case 't' -> {
+          result.append(orig.substring(postEsc, thisEsc));
+          result.append('\t');
+          postEsc = thisEsc + 2;
+        }
+        case '\\' -> {
+          // This is not in the default case because the search would find
+          // the quoted backslash.  Here we include the first backslash in
+          // the output, but not the second.
+          result.append(orig.substring(postEsc, thisEsc + 1));
+          postEsc = thisEsc + 2;
+        }
+
+        case 'u' -> {
+          // Unescape Unicode characters.
+          result.append(orig.substring(postEsc, thisEsc));
+          char unicodeChar = 0;
+          int ii = thisEsc + 2;
+          // The specification permits one or more 'u' characters.
+          while (ii < orig.length() && orig.charAt(ii) == 'u') {
+            ii++;
+          }
+          // The specification requires exactly 4 hexadecimal characters.
+          // This is more liberal.  (Should it be?)
+          int limit = Math.min(ii + 4, orig.length());
+          while (ii < limit) {
+            int thisDigit = Character.digit(orig.charAt(ii), 16);
+            if (thisDigit == -1) {
+              break;
+            }
+            unicodeChar = (char) ((unicodeChar * 16) + thisDigit);
+            ii++;
+          }
+          result.append(unicodeChar);
+          postEsc = ii;
+        }
+
+        case '0', '1', '2', '3', '4', '5', '6', '7' -> {
+          // Unescape octal characters.
+          result.append(orig.substring(postEsc, thisEsc));
+          char octalChar = 0;
+          int iii = thisEsc + 1;
+          while (iii < Math.min(thisEsc + 4, orig.length())) {
+            int thisDigit = Character.digit(orig.charAt(iii), 8);
+            if (thisDigit == -1) {
+              break;
+            }
+            int newValue = (octalChar * 8) + thisDigit;
+            if (newValue > 0xFF) {
+              break;
+            }
+            octalChar = (char) newValue;
+            iii++;
+          }
+          result.append(octalChar);
+          postEsc = iii;
+        }
+
+        default -> {
+          // In the default case, retain the character following the backslash,
+          // but discard the backslash itself.  "\*" is just a one-character string.
+          result.append(orig.substring(postEsc, thisEsc));
+          postEsc = thisEsc + 1;
+        }
+      }
+      thisEsc = orig.indexOf('\\', postEsc);
+    }
+    if (postEsc == 0) {
+      return orig;
+    }
+    result.append(orig.substring(postEsc));
+    return result.toString();
+  }
+
+  // //////////////////////////////////////////////////////////////////////
+  // Whitespace
+  //
+
+  /**
+   * Remove all whitespace before or after instances of delimiter.
+   *
+   * @param arg string to remove whitespace in
+   * @param delimiter string to remove whitespace abutting
+   * @return version of arg, with whitespace abutting delimiter removed
+   */
+  @SideEffectFree
+  public static String removeWhitespaceAround(String arg, String delimiter) {
+    String result = removeWhitespaceBefore(arg, delimiter);
+    result = removeWhitespaceAfter(result, delimiter);
+    return result;
+  }
+
+  /**
+   * Remove all whitespace after instances of delimiter.
+   *
+   * @param arg string to remove whitespace in
+   * @param delimiter a non-empty string to remove whitespace after
+   * @return version of arg, with whitespace after delimiter removed
+   */
+  @SideEffectFree
+  public static String removeWhitespaceAfter(String arg, String delimiter) {
+    if (delimiter.isEmpty()) {
+      throw new IllegalArgumentException("Bad delimiter: \"" + delimiter + "\"");
+    }
+    // String orig = arg;
+    int delimLen = delimiter.length();
+    int delimIndex = arg.indexOf(delimiter);
+    while (delimIndex > -1) {
+      int nonWsIndex = delimIndex + delimLen;
+      while (nonWsIndex < arg.length() && Character.isWhitespace(arg.charAt(nonWsIndex))) {
+        nonWsIndex++;
+      }
+      // if (nonWsIndex == arg.length()) {
+      //   System.out.println("No nonspace character at end of: " + arg);
+      // } else {
+      //   System.out.println("'" + arg.charAt(nonWsIndex) + "' not a space character at " +
+      //       nonWsIndex + " in: " + arg);
+      // }
+      if (nonWsIndex != delimIndex + delimLen) {
+        arg = arg.substring(0, delimIndex + delimLen) + arg.substring(nonWsIndex);
+      }
+      delimIndex = arg.indexOf(delimiter, delimIndex + 1);
+    }
+    return arg;
+  }
+
+  /**
+   * Remove all whitespace before instances of delimiter.
+   *
+   * @param arg string to remove whitespace in
+   * @param delimiter a non-empty string to remove whitespace before
+   * @return version of arg, with whitespace before delimiter removed
+   */
+  @SideEffectFree
+  public static String removeWhitespaceBefore(String arg, String delimiter) {
+    if (delimiter.isEmpty()) {
+      throw new IllegalArgumentException("Bad delimiter: \"" + delimiter + "\"");
+    }
+    // System.out.println("removeWhitespaceBefore(\"" + arg + "\", \"" + delimiter + "\")");
+    // String orig = arg;
+    int delimIndex = arg.indexOf(delimiter);
+    while (delimIndex > -1) {
+      int nonWsIndex = delimIndex - 1;
+      while (nonWsIndex >= 0 && Character.isWhitespace(arg.charAt(nonWsIndex))) {
+        nonWsIndex--;
+      }
+      // if (nonWsIndex == -1) {
+      //   System.out.println("No nonspace character at front of: " + arg);
+      // } else {
+      //   System.out.println("'" + arg.charAt(nonWsIndex) + "' not a space character at " +
+      //       nonWsIndex + " in: " + arg);
+      // }
+      if (nonWsIndex != delimIndex - 1) {
+        arg = arg.substring(0, nonWsIndex + 1) + arg.substring(delimIndex);
+      }
+      delimIndex = arg.indexOf(delimiter, nonWsIndex + 2);
+    }
+    return arg;
+  }
+
+  /**
+   * Returns a string of the specified length, truncated if necessary (in which case the last 3
+   * non-truncated characters are replaced by "..."), and padded with spaces to the left if
+   * necessary.
+   *
+   * @param s string to truncate or pad
+   * @param length goal length
+   * @param c the character to use for padding
+   * @param truncate if false, no truncation is done, only padding
+   * @return {@code s} truncated or padded to {@code length} characters
+   */
+  @SuppressWarnings({
+    "allcheckers:purity.call", // side effect to local state
+    "lock:method.guarantee.violated" // side effect to local state
+  })
+  @SideEffectFree
+  public static String lpad(String s, @NonNegative int length, char c, boolean truncate) {
+    int sLength = s.length();
+    if (sLength == length) {
+      return s;
+    } else if (sLength < length) {
+      StringBuilder buf = new StringBuilder();
+      for (int i = sLength; i < length; i++) {
+        buf.append(c);
+      }
+      buf.append(s);
+      return buf.toString();
+    } else {
+      if (truncate && length > 3) {
+        return s.substring(0, length - 3) + "...";
+      } else {
+        return s;
+      }
+    }
+  }
+
+  /**
+   * Returns a string of the specified length, truncated if necessary (in which case the last 3
+   * non-truncated characters are replaced by "..."), and padded with `c` to the left if necessary.
+   *
+   * @param s string to truncate or pad
+   * @param length goal length
+   * @param c character to use for padding
+   * @return {@code s} truncated or padded to {@code length} characters
+   */
+  @SideEffectFree
+  public static String lpad(String s, @NonNegative int length, char c) {
+    return lpad(s, length, c, true);
+  }
+
+  /**
+   * Returns a string of the specified length, truncated if necessary (in which case the last 3
+   * non-truncated characters are replaced by "..."), and padded with spaces to the left if
+   * necessary.
+   *
+   * @param s string to truncate or pad
+   * @param length goal length
+   * @return {@code s} truncated or padded to {@code length} characters
+   */
+  @SideEffectFree
+  public static String lpad(String s, @NonNegative int length) {
+    return lpad(s, length, ' ', true);
+  }
+
+  /**
+   * Returns a string of the specified length, truncated if necessary (in which case the last 3
+   * non-truncated characters are replaced by "..."), and padded with the given character to the
+   * right if necessary.
+   *
+   * @param s string to truncate or pad
+   * @param length goal length
+   * @param c character to use for padding
+   * @param truncate if false, no truncation is done, only padding
+   * @return {@code s} truncated or padded to {@code length} characters
+   */
+  @SuppressWarnings({
+    "allcheckers:purity.call", // side effect to local state
+    "lock:method.guarantee.violated" // side effect to local state
+  })
+  @SideEffectFree
+  public static String rpad(String s, @NonNegative int length, char c, boolean truncate) {
+    int sLength = s.length();
+    if (sLength == length) {
+      return s;
+    } else if (sLength < length) {
+      StringBuilder buf = new StringBuilder(s);
+      for (int i = sLength; i < length; i++) {
+        buf.append(c);
+      }
+      return buf.toString();
+    } else {
+      if (truncate && length > 3) {
+        return s.substring(0, length - 3) + "...";
+      } else {
+        return s;
+      }
+    }
+  }
+
+  /**
+   * Returns a string of the specified length, truncated if necessary (in which case the last 3
+   * non-truncated characters are replaced by "..."), and padded with the given character to the
+   * right if necessary.
+   *
+   * @param s string to truncate or pad
+   * @param length goal length
+   * @param c character to use for padding
+   * @return {@code s} truncated or padded to {@code length} characters
+   */
+  @SideEffectFree
+  public static String rpad(String s, @NonNegative int length, char c) {
+    return rpad(s, length, c, true);
+  }
+
+  /**
+   * Returns a string of the specified length, truncated if necessary (in which case the last 3
+   * non-truncated characters are replaced by "..."), and padded with spaces to the right if
+   * necessary.
+   *
+   * @param s string to truncate or pad
+   * @param length goal length
+   * @return {@code s} truncated or padded to {@code length} characters
+   */
+  @SideEffectFree
+  public static String rpad(String s, @NonNegative int length) {
+    return rpad(s, length, ' ');
+  }
+
+  /**
+   * Converts the int to a String, then formats it using {@link #rpad(String,int)}.
+   *
+   * @param num int whose string representation to truncate or pad
+   * @param length goal length
+   * @return a string representation of {@code num} padded to {@code length} characters
+   */
+  @SideEffectFree
+  public static String rpad(int num, @NonNegative int length) {
+    return rpad(String.valueOf(num), length, ' ', /* truncate= */ false);
+  }
+
+  /**
+   * Converts the double to a String, then formats it using {@link #rpad(String,int)}. Does not do
+   * truncation that is after a decimal point.
+   *
+   * @param num double whose string representation to truncate or pad
+   * @param length goal length
+   * @return a string representation of {@code num} padded to {@code length} characters
+   */
+  @SuppressWarnings({
+    "lock:method.guarantee.violated", // side effect to local state
+    "allcheckers:purity.call"
+  }) // side effect to local state
+  @SideEffectFree
+  public static String rpad(double num, @NonNegative int length) {
+    if (length == 0) {
+      throw new IllegalArgumentException(String.format("rpad(%s, %s)", num, length));
+    }
+    String numString = String.valueOf(num);
+    int dotIndex = numString.indexOf('.');
+    if (dotIndex >= length) {
+      return numString.substring(0, dotIndex);
+    } else if (dotIndex == length - 1) {
+      // Pad instead of having the last character in the output be the decimal period.
+      return numString.substring(0, dotIndex) + " ";
+    } else
+    // now: dotIndex < length - 1
+    if (length < numString.length()) {
+      return numString.substring(0, length);
+    } else {
+      // This is guaranteed to pad only, so inline rather than calling a method.
+      StringBuilder result = new StringBuilder(numString);
+      for (int i = numString.length(); i < length; i++) {
+        result.append(' ');
+      }
+      return result.toString();
+    }
+  }
+
+  // //////////////////////////////////////////////////////////////////////
+  // Comparisons
+  //
+
+  /**
+   * Orders Objects according to their {@code toString()} representation. Null is considered less
+   * than any non-null Object.
+   *
+   * <p>Note: if toString returns a nondeterministic value, such as one that depends on the result
+   * of {@code hashCode()}, then this comparator may yield different orderings from run to run of a
+   * program.
+   *
+   * <p>This cannot be replaced by {@code Comparator.nullsFirst(Comparator.naturalOrder())} because
+   * {@code Object} is not {@code Comparable}.
+   */
+  public static final class ObjectComparator implements Comparator<@Nullable Object>, Serializable {
+
+    /** The canonical ObjectComparator. */
+    public static final ObjectComparator IT = new ObjectComparator();
+
+    /**
+     * The canonical ObjectComparator.
+     *
+     * @deprecated use {@link #IT}
+     */
+    @Deprecated(since = "2026-09-15")
+    // @SuppressWarnings("PMD.FieldNamingConventions")
+    public static final ObjectComparator it = IT;
+
+    /** Create a new ObjectComparator. Clients should use {@link #IT}. */
+    private ObjectComparator() {}
+
+    /** Unique identifier for serialization. If you add or remove fields, change this number. */
+    private static final long serialVersionUID = 20170420L;
+
+    /**
+     * Compare two Objects based on their string representations. Null is considered less than any
+     * non-null Object.
+     *
+     * @param o1 first object to compare
+     * @param o2 second object to compare
+     * @return a negative integer, zero, or a positive integer as the first argument's {@code
+     *     toString()} representation is less than, equal to, or greater than the second argument's
+     *     {@code toString()} representation
+     */
+    @SuppressWarnings({
+      "allcheckers:purity.call",
+      "lock"
+    }) // toString is being used in a deterministic way
+    @Pure
+    @Override
+    public int compare(@Nullable Object o1, @Nullable Object o2) {
+      // Make null compare smaller than anything else
+      if (o1 == o2) {
+        return 0;
+      }
+      if (o1 == null) {
+        return -1;
+      }
+      if (o2 == null) {
+        return 1;
+      }
+      if (o1.equals(o2)) {
+        return 0;
+      }
+      // Don't compare output of hashCode() because it is non-deterministic from run to run.
+      String s1 = o1.toString();
+      String s2 = o2.toString();
+      return s1.compareTo(s2);
+    }
+  }
+
+  // //////////////////////////////////////////////////////////////////////
+  // StringTokenizer
+  //
+
+  /**
+   * Returns an ArrayList of the Strings returned by {@link
+   * java.util.StringTokenizer#StringTokenizer(String,String,boolean)} with the given arguments.
+   *
+   * <p>The static type is {@code ArrayList<Object>} because StringTokenizer extends {@code
+   * Enumeration<Object>} instead of {@code Enumeration<String>} as it should (probably due to
+   * backward-compatibility).
+   *
+   * @param str a string to be parsed
+   * @param delim the delimiters
+   * @param returnDelims flag indicating whether to return the delimiters as tokens
+   * @return vector of strings resulting from tokenization
+   */
+  @SuppressWarnings({
+    "allcheckers:purity.call", // side effect to local state
+    "lock:method.guarantee.violated" // side effect to local state
+  })
+  @SideEffectFree
+  public static List<Object> tokens(String str, String delim, boolean returnDelims) {
+    return CollectionsP.makeArrayList(new StringTokenizer(str, delim, returnDelims));
+  }
+
+  /**
+   * Returns an ArrayList of the Strings returned by {@link
+   * java.util.StringTokenizer#StringTokenizer(String,String)} with the given arguments.
+   *
+   * @param str a string to be parsed
+   * @param delim the delimiters
+   * @return vector of strings resulting from tokenization
+   */
+  @SuppressWarnings({
+    "allcheckers:purity.call", // side effect to local state
+    "lock:method.guarantee.violated" // side effect to local state
+  })
+  @SideEffectFree
+  public static List<Object> tokens(String str, String delim) {
+    return CollectionsP.makeArrayList(new StringTokenizer(str, delim));
+  }
+
+  /**
+   * Returns an ArrayList of the Strings returned by {@link
+   * java.util.StringTokenizer#StringTokenizer(String)} with the given arguments.
+   *
+   * @param str a string to be parsed
+   * @return vector of strings resulting from tokenization
+   */
+  @SuppressWarnings({
+    "allcheckers:purity.call", // side effect to local state
+    "lock:method.guarantee.violated" // side effect to local state
+  })
+  @SideEffectFree
+  public static List<Object> tokens(String str) {
+    return CollectionsP.makeArrayList(new StringTokenizer(str));
+  }
+
+  // //////////////////////////////////////////////////////////////////////
+  // Version numbers
+  //
+
+  /** Matches a version number, of the form N.N or N.N.N, etc., where each N consists of digits. */
+  public static final @Regex String VERSION_NUMBER_REGEX = "\\d+(\\.\\d+)+";
+
+  /**
+   * Matches a version number, of the form N.N or N.N.N, etc., where each N consists of digits.
+   *
+   * @deprecated use {@link #VERSION_NUMBER_REGEX}
+   */
+  @Deprecated(since = "2026-09-15")
+  // @SuppressWarnings("PMD.FieldNamingConventions")
+  public static final @Regex String versionNumberRegex = VERSION_NUMBER_REGEX;
+
+  /** Matches a version number, of the form N.N or N.N.N, etc., where each N consists of digits. */
+  public static final Pattern VERSION_NUMBER_PATTERN = Pattern.compile("\\d+(\\.\\d+)+");
+
+  /**
+   * Matches a version number, of the form N.N or N.N.N, etc., where each N consists of digits.
+   *
+   * @deprecated use {@link #VERSION_NUMBER_PATTERN}
+   */
+  @Deprecated(since = "2026-09-15")
+  // @SuppressWarnings("PMD.FieldNamingConventions")
+  public static final Pattern versionNumberPattern = VERSION_NUMBER_PATTERN;
+
+  /**
+   * Returns true if the given text is a version number. It has the form N.N or N.N.N, etc., where
+   * each N consists of digits.
+   *
+   * @param text a string
+   * @return true if the given text is a version number
+   */
+  // "protected" to permit tests to access it.
+  public static boolean isVersionNumber(String text) {
+    return VERSION_NUMBER_PATTERN.matcher(text).matches();
+  }
+
+  /**
+   * A comparator that compares version numbers. It must only be invoked on strings that are version
+   * numbers.
+   *
+   * <p>This comparator is inconsistent with equals: it compares each component numerically, so it
+   * returns 0 for two unequal strings whose components have leading zeros, such as {@code "1.2"}
+   * and {@code "1.02"}.
+   *
+   * <p>A component may be arbitrarily large; it is not converted to an {@code int}, so a component
+   * larger than {@code Integer.MAX_VALUE} does not cause an exception.
+   */
+  public static class VersionNumberComparator implements Comparator<String> {
+
+    /** Creates a new VersionNumberComparator. */
+    public VersionNumberComparator() {}
+
+    @SuppressWarnings({
+      "allcheckers:purity.not.deterministic.call", // deterministic up to equals
+      "allcheckers:purity.not.deterministic.not.sideeffectfree.call", // compareDigitStrings is pure
+      "allcheckers:method.guarantee.violated" // compareDigitStrings is pure
+    })
+    @Override
+    @Pure
+    public int compare(String s1, String s2) {
+      if (s1.equals(s2)) {
+        return 0;
+      }
+      @SuppressWarnings("allcheckers:purity.call") // deterministic up to equality
+      String[] components1 = s1.split("\\.", -1);
+      @SuppressWarnings("allcheckers:purity.call") // deterministic up to equality
+      String[] components2 = s2.split("\\.", -1);
+      int len = Math.min(components1.length, components2.length);
+      for (int i = 0; i < len; i++) {
+        int comparison = compareDigitStrings(components1[i], components2[i]);
+        if (comparison != 0) {
+          return comparison;
+        }
+      }
+      return Integer.compare(components1.length, components2.length);
+    }
+
+    /**
+     * Compares two strings of decimal digits numerically. The components of a version number may be
+     * arbitrarily large, so this does not convert them to {@code int} or {@code long}.
+     *
+     * @param s1 a nonempty string of decimal digits
+     * @param s2 a nonempty string of decimal digits
+     * @return a negative integer, zero, or a positive integer as s1 is numerically less than, equal
+     *     to, or greater than s2
+     * @throws NumberFormatException if either argument is not a nonempty string of decimal digits
+     */
+    @Pure
+    private static int compareDigitStrings(String s1, String s2) {
+      int start1 = indexOfFirstSignificantDigit(s1);
+      int start2 = indexOfFirstSignificantDigit(s2);
+      // Ignoring leading zeros, the number with more digits is the larger one.
+      int comparison = Integer.compare(s1.length() - start1, s2.length() - start2);
+      if (comparison != 0) {
+        return comparison;
+      }
+      // The two numbers have the same number of significant digits, so comparing them
+      // lexicographically compares them numerically.
+      @SuppressWarnings("allcheckers:purity.call") // deterministic up to equality
+      int result = s1.substring(start1).compareTo(s2.substring(start2));
+      return result;
+    }
+
+    /**
+     * Returns the index in the given string of its first nonzero digit.
+     *
+     * @param s a nonempty string of decimal digits
+     * @return the index of the first nonzero digit in s, or s.length() if every digit of s is zero
+     * @throws NumberFormatException if s is not a nonempty string of decimal digits
+     */
+    @Pure
+    private static @IndexOrHigh("#1") int indexOfFirstSignificantDigit(String s) {
+      if (s.isEmpty()) {
+        throw new NumberFormatException("Not a version number component: \"" + s + "\"");
+      }
+      for (int i = 0; i < s.length(); i++) {
+        char c = s.charAt(i);
+        if (c < '0' || c > '9') {
+          throw new NumberFormatException("Not a version number component: \"" + s + "\"");
+        }
+      }
+      for (int i = 0; i < s.length(); i++) {
+        if (s.charAt(i) != '0') {
+          return i;
+        }
+      }
+      return s.length();
+    }
+  }
+
+  /** A VersionNumberComparator. */
+  private static VersionNumberComparator vnc = new VersionNumberComparator();
+
+  /**
+   * Returns true if the first version number is less than or equal to the second version number.
+   *
+   * @param v1 a version number
+   * @param v2 a version number
+   * @return true if the first version number is less than or equal to the second version number
+   */
+  // "protected" to permit tests to access it.
+  public static boolean isVersionNumberLE(String v1, String v2) {
+    int compare = vnc.compare(v1, v2);
+    return compare <= 0;
+  }
+
+  // //////////////////////////////////////////////////////////////////////
+  // Debugging variants of toString
+  //
+
+  /**
+   * Returns a string representation of the value and its class. Shows each element of an array,
+   * list, or map along with the element's class; to use the {@code toString()} of a list, a map, or
+   * an array of objects instead, pass true to {@link #toStringAndClass(Object, boolean)}. Like that
+   * method, this method does not throw even if printing the value throws, except that it rethrows a
+   * {@link VirtualMachineError} other than {@link StackOverflowError}.
+   *
+   * @param v a value; may be null
+   * @return the value's toString and its class
+   */
+  @SideEffectFree
+  public static String toStringAndClass(@Nullable Object v) {
+    return toStringAndClass(v, false);
+  }
+
+  /**
+   * The values that calls to {@link #toStringAndClass(Object, boolean)} on the current thread are
+   * printing, outermost first.
+   */
+  private static final ThreadLocal<@Nullable @Modifiable @IteratorPolyMod List<Object>>
+      valuesBeingPrinted = ThreadLocal.withInitial(() -> new ArrayList<>());
+
+  /**
+   * Returns a string representation of the value and its class. Intended for debugging.
+   *
+   * <p>An array of primitives is shown as its elements, as in "[1, 2] [class [I]". A list is shown
+   * as its elements, each with its class, as in "[a [class java.lang.String]] [class
+   * java.util.ArrayList]". A map is shown as a line "{", then one line per entry, indented by two
+   * spaces, such as "a [class java.lang.String] =&gt; 1 [class java.lang.Integer]", then a line
+   * such as "} [class java.util.HashMap]"; an empty map is shown as "{} [class java.util.HashMap]".
+   * An array of objects is shown like a list. Each element, key, and value is shown as if by {@code
+   * toStringAndClass(element, true)}.
+   *
+   * <p>If {@code toString()} on a value calls this method on the same value, directly or via other
+   * values, then the inner call returns "cyclic_reference [CLASS]".
+   *
+   * <p>This method does not throw when printing the value throws, unless the JVM is broken or out
+   * of resources other than stack: it rethrows a {@link VirtualMachineError} other than {@link
+   * StackOverflowError}, such as {@link OutOfMemoryError}. It can also throw {@code
+   * StackOverflowError} if it is called when the stack is nearly exhausted. If calling {@code
+   * toString()} on the value or on one of its elements throws, then the text for that value or
+   * element is "exception_when_calling_toString [CLASS]: THROWABLE", where THROWABLE is the result
+   * of {@code toString()} on the thrown throwable, as in "exception_when_calling_toString [class
+   * java.util.ArrayList]: java.lang.StackOverflowError" for a list that contains itself indirectly.
+   * If iterating over the elements of a list or map throws, as when iteration throws {@code
+   * ConcurrentModificationException}, the result is "exception_when_printing_elements [CLASS]:
+   * THROWABLE". If the stack is too nearly exhausted to describe the failure, or if {@code
+   * toString()} on the thrown throwable throws, the text is just "exception_when_calling_toString"
+   * or "exception_when_printing_elements".
+   *
+   * @param v a value; may be null
+   * @param shallow true if the result uses the value's own {@code toString()}, rather than showing
+   *     each element and its class, for a list, a map, or an array of objects
+   * @return the value's toString and its class
+   */
+  @SuppressWarnings({
+    "allcheckers:purity", // side effect to valuesBeingPrinted, which is restored before returning
+    "lock:method.guarantee.violated" // side effect to valuesBeingPrinted
+  })
+  @SideEffectFree
+  public static String toStringAndClass(@Nullable Object v, boolean shallow) {
+    if (v == null) {
+      return "null";
+    }
+    Class<?> vClass = v.getClass();
+    if (vClass == Object.class) {
+      return "a value of class " + vClass;
+    }
+    if (vClass.isArray() && vClass.getComponentType().isPrimitive()) {
+      // An array of primitives cannot contain a cycle, and its toString() shows no elements.
+      return arrayToStringAndClass(v);
+    }
+    @SuppressWarnings("nullness:assignment") // withInitial() makes get() return non-null
+    @NonNull @Modifiable @IteratorPolyMod List<Object> beingPrinted = valuesBeingPrinted.get();
+    if (containsIdentical(beingPrinted, v)) {
+      return "cyclic_reference [" + vClass + "]";
+    }
+    int numBeingPrinted = beingPrinted.size();
+    beingPrinted.add(v);
+    try {
+      return toStringAndClassNoCycle(v, vClass, shallow);
+    } finally {
+      // Remove v, and also any value that a nested call did not remove because its finally block
+      // threw StackOverflowError.
+      while (beingPrinted.size() > numBeingPrinted) {
+        beingPrinted.remove(beingPrinted.size() - 1);
+      }
+    }
+  }
+
+  /**
+   * Returns true if the list contains the given value, compared by identity.
+   *
+   * @param lst a list
+   * @param v the value to search for
+   * @return true if the list contains the given value, compared by identity
+   */
+  @SuppressWarnings({
+    "interning:not.interned", // compares by identity
+    "ReferenceEquality" // compares by identity
+  })
+  @Pure
+  private static boolean containsIdentical(List<Object> lst, Object v) {
+    for (Object o : lst) {
+      if (o == v) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Returns a string representation of the value and its class, as described in {@link
+   * #toStringAndClass(Object, boolean)}, given that the value is not an array of primitives and is
+   * not already being printed.
+   *
+   * @param v a value
+   * @param vClass the class of the value
+   * @param shallow true if the result uses the value's own {@code toString()}, rather than showing
+   *     each element and its class, for a list, a map, or an array of objects
+   * @return the value's toString and its class
+   */
+  @SideEffectFree
+  private static String toStringAndClassNoCycle(Object v, Class<?> vClass, boolean shallow) {
+    if (!shallow) {
+      // Printing an element calls toStringAndClass, which does not throw.
+      if (vClass.isArray()) {
+        return arrayToStringAndClass(v);
+      }
+      if (v instanceof List<?> l) {
+        return printSafely(
+            () ->
+                elementsToString((List<? extends @PolyNull @Signed Object>) l)
+                    + " ["
+                    + vClass
+                    + "]",
+            vClass,
+            "exception_when_printing_elements");
+      }
+      if (v instanceof Map<?, ?> m) {
+        return printSafely(
+            () -> {
+              @SuppressWarnings("keyfor:type.argument") // TODO
+              String entries =
+                  MapsP.entriesToString(
+                      (Map<? extends @PolyNull @Signed Object, ? extends @PolyNull @Signed Object>)
+                          m,
+                      "  ");
+              return (entries.isEmpty() ? "{" : "{" + LINE_SEP + entries + LINE_SEP)
+                  + "} ["
+                  + vClass
+                  + "]";
+            },
+            vClass,
+            "exception_when_printing_elements");
+      }
+    }
+    return printSafely(
+        // String.valueOf handles a toString() that returns null, in violation of its contract.
+        () -> String.format("%s [%s]", escapeJava(String.valueOf(v.toString())), vClass),
+        vClass,
+        "exception_when_calling_toString");
+  }
+
+  /**
+   * Returns the result of the given printer, or text describing the failure if the printer throws.
+   * The text is "FAILURELABEL [CLASS]: THROWABLE", where THROWABLE is the result of {@code
+   * toString()} on the thrown throwable, as in "exception_when_calling_toString [class
+   * java.util.ArrayList]: java.lang.StackOverflowError". If the stack is too nearly exhausted to
+   * compute that text, or if {@code toString()} on the throwable throws, the text is just
+   * FAILURELABEL.
+   *
+   * <p>This method does not throw, except that it rethrows a {@link VirtualMachineError} other than
+   * {@link StackOverflowError}, such as {@link OutOfMemoryError}. Such an error means that the JVM
+   * is broken or out of resources, so a caller should not catch it. A {@code StackOverflowError} is
+   * not rethrown, because {@code toString()} throws it for a collection that contains itself
+   * indirectly.
+   *
+   * @param printer a computation that returns a string representation of a value
+   * @param vClass the class of the value that the printer prints; used for diagnostics
+   * @param failureLabel the text that starts the result if the printer throws, such as
+   *     "exception_when_calling_toString"
+   * @return the printer's result, or text describing the failure if the printer throws
+   */
+  @SuppressWarnings({
+    "allcheckers:purity.call", // the printer is side-effect-free
+    "lock:method.guarantee.violated" // the printer is side-effect-free
+  })
+  @SideEffectFree
+  static String printSafely(Supplier<String> printer, Class<?> vClass, String failureLabel) {
+    // Outside the two try blocks, this method calls no method, because the stack might be nearly
+    // exhausted, and a method call could throw StackOverflowError.
+    Throwable thrown;
+    try {
+      return printer.get();
+    } catch (StackOverflowError e) {
+      thrown = e;
+    } catch (VirtualMachineError e) {
+      throw e;
+    } catch (Throwable e) {
+      thrown = e;
+    }
+    try {
+      return String.format("%s [%s]: %s", failureLabel, vClass, escapeJava(thrown.toString()));
+    } catch (StackOverflowError e) {
+      return failureLabel;
+    } catch (VirtualMachineError e) {
+      throw e;
+    } catch (Throwable e) {
+      return failureLabel;
+    }
+  }
+
+  /**
+   * Returns a string representation of the list and its class. Intended for debugging. Like {@link
+   * #toStringAndClass(Object)}, this method does not throw even if printing the list throws, except
+   * that it rethrows a {@link VirtualMachineError} other than {@link StackOverflowError}.
+   *
+   * @param lst a value; may be null
+   * @return the value's toString and its class
+   */
+  @SideEffectFree
+  public static String listToStringAndClass(
+      @Nullable List<? extends @Signed @PolyNull Object> lst) {
+    return toStringAndClass(lst);
+  }
+
+  /**
+   * Returns a string representation of each element of the list and its class, but not the class of
+   * the list itself. Like {@link #toStringAndClass(Object)}, this method does not throw even if
+   * printing the list throws, except that it rethrows a {@link VirtualMachineError} other than
+   * {@link StackOverflowError}.
+   *
+   * @param lst a list; may be null
+   * @return a string representation of each element and its class
+   */
+  @SideEffectFree
+  public static String listToString(@Nullable List<? extends @Signed @PolyNull Object> lst) {
+    if (lst == null) {
+      return "null";
+    }
+    return printSafely(
+        () -> elementsToString(lst), lst.getClass(), "exception_when_printing_elements");
+  }
+
+  /**
+   * Returns a string representation of each element of the given list and its class, as in "[a
+   * [class java.lang.String], 1 [class java.lang.Integer]]". Throws if iterating over the list
+   * throws.
+   *
+   * @param lst a list
+   * @return a string representation of each element and its class
+   */
+  @SuppressWarnings({
+    "allcheckers:purity.call", // side effect to local state
+    "lock:method.guarantee.violated" // side effect to local state
+  })
+  @SideEffectFree
+  private static String elementsToString(List<? extends @Signed @PolyNull Object> lst) {
+    StringJoiner sj = new StringJoiner(", ", "[", "]");
+    for (Object o : lst) {
+      sj.add(toStringAndClass(o, true));
+    }
+    return sj.toString();
+  }
+
+  /**
+   * Returns a string representation of the contents of the specified array. The argument must be an
+   * array or null. This just dispatches one of the 9 overloaded versions of {@code
+   * java.util.Arrays.toString()}.
+   *
+   * @param a an array
+   * @return a string representation of the array
+   * @throws IllegalArgumentException if a is not an array
+   */
+  @SideEffectFree
+  public static String arrayToStringAndClass(@Nullable Object a) {
+
+    if (a == null) {
+      return "null";
+    }
+    String theClass = " [" + a.getClass() + "]";
+
+    if (a instanceof boolean[] ba) {
+      return Arrays.toString(ba) + theClass;
+    } else if (a instanceof byte[] ba) {
+      return Arrays.toString(ba) + theClass;
+    } else if (a instanceof char[] ca) {
+      return Arrays.toString(ca) + theClass;
+    } else if (a instanceof double[] da) {
+      return Arrays.toString(da) + theClass;
+    } else if (a instanceof float[] fa) {
+      return Arrays.toString(fa) + theClass;
+    } else if (a instanceof int[] ia) {
+      return Arrays.toString(ia) + theClass;
+    } else if (a instanceof long[] la) {
+      return Arrays.toString(la) + theClass;
+    } else if (a instanceof short[] sa) {
+      return Arrays.toString(sa) + theClass;
+    }
+
+    if (a instanceof Object[] oa) {
+      return printSafely(
+          () -> elementsToString(Arrays.asList(oa)) + theClass,
+          a.getClass(),
+          "exception_when_printing_elements");
+    }
+
+    throw new IllegalArgumentException(
+        "Argument is not an array; its class is " + a.getClass().getName());
+  }
+
+  // //////////////////////////////////////////////////////////////////////
+  // English text
+  //
+
+  /** Exceptions to the usual English noun pluralization rules. */
+  private static final @Modifiable Map<String, String> N_PLURAL_EXCEPTIONS = new HashMap<>();
+
+  static {
+    // No change
+    N_PLURAL_EXCEPTIONS.put("bison", "bison");
+    N_PLURAL_EXCEPTIONS.put("buffalo", "buffalo");
+    N_PLURAL_EXCEPTIONS.put("carp", "carp");
+    N_PLURAL_EXCEPTIONS.put("chassis", "chassis");
+    N_PLURAL_EXCEPTIONS.put("cod", "cod");
+    N_PLURAL_EXCEPTIONS.put("deer", "deer");
+    N_PLURAL_EXCEPTIONS.put("fish", "fish");
+    N_PLURAL_EXCEPTIONS.put("kakapo", "kakapo");
+    N_PLURAL_EXCEPTIONS.put("neat", "neat");
+    N_PLURAL_EXCEPTIONS.put("pike", "pike");
+    N_PLURAL_EXCEPTIONS.put("salmon", "salmon");
+    N_PLURAL_EXCEPTIONS.put("series", "series");
+    N_PLURAL_EXCEPTIONS.put("sheep", "sheep");
+    N_PLURAL_EXCEPTIONS.put("shrimp", "shrimp");
+    N_PLURAL_EXCEPTIONS.put("species", "species");
+    N_PLURAL_EXCEPTIONS.put("squid", "squid");
+    N_PLURAL_EXCEPTIONS.put("trout", "trout");
+
+    // Native American tribe names
+
+    N_PLURAL_EXCEPTIONS.put("Cherokee", "Cherokee");
+    N_PLURAL_EXCEPTIONS.put("Cree", "Cree");
+    N_PLURAL_EXCEPTIONS.put("Comanche", "Comanche");
+    N_PLURAL_EXCEPTIONS.put("Delaware", "Delaware");
+    N_PLURAL_EXCEPTIONS.put("Hopi", "Hopi");
+    N_PLURAL_EXCEPTIONS.put("Iroquois", "Iroquois");
+    N_PLURAL_EXCEPTIONS.put("Kiowa", "Kiowa");
+    N_PLURAL_EXCEPTIONS.put("Navajo", "Navajo");
+    N_PLURAL_EXCEPTIONS.put("Ojibwa", "Ojibwa");
+    N_PLURAL_EXCEPTIONS.put("Sioux", "Sioux");
+    N_PLURAL_EXCEPTIONS.put("Zuni", "Zuni");
+
+    // Ending in "y"
+    N_PLURAL_EXCEPTIONS.put("lay-by", "lay-bys");
+    N_PLURAL_EXCEPTIONS.put("stand-by", "stand-bys");
+
+    // Ending in "i"
+    N_PLURAL_EXCEPTIONS.put("alkali", "alkalies");
+
+    // Plural ending in "en"
+    N_PLURAL_EXCEPTIONS.put("ox", "oxen");
+    N_PLURAL_EXCEPTIONS.put("child", "children");
+
+    // Apophonic plurals
+    N_PLURAL_EXCEPTIONS.put("foot", "feet");
+    N_PLURAL_EXCEPTIONS.put("goose", "geese");
+    N_PLURAL_EXCEPTIONS.put("louse", "lice");
+    N_PLURAL_EXCEPTIONS.put("dormouse", "dormice");
+    N_PLURAL_EXCEPTIONS.put("man", "men");
+    N_PLURAL_EXCEPTIONS.put("mouse", "mice");
+    N_PLURAL_EXCEPTIONS.put("tooth", "teeth");
+    N_PLURAL_EXCEPTIONS.put("woman", "women");
+
+    // Miscellaneous irregular plurals
+    N_PLURAL_EXCEPTIONS.put("person", "people");
+  }
+
+  /**
+   * Returns either "n <em>noun</em>" or "n <em>noun</em>s" depending on {@code n}. Adds "es" to
+   * words ending with "ch", "s", "sh", or "x". Adds "ies" to words ending with "y" when the
+   * previous letter is a consonant. Handles some irregular nouns.
+   *
+   * @param n count of nouns
+   * @param noun word being counted; must not be the empty string
+   * @return {@code noun}, if n==1; otherwise, pluralization of {@code noun}
+   * @throws IllegalArgumentException if the length of {@code noun} is 0
+   */
+  @SideEffectFree
+  public static String nPlural(int n, String noun) {
+    if (noun.isEmpty()) {
+      throw new IllegalArgumentException(
+          "The second argument to nPlural must not be an empty string");
+    }
+    if (n == 1) {
+      return n + " " + noun;
+    }
+    String irregular = N_PLURAL_EXCEPTIONS.get(noun);
+    if (irregular != null) {
+      return n + " " + irregular;
+    }
+
+    // TODO: handle more from https://en.wikipedia.org/wiki/English_plurals ,
+    // and organize `N_PLURAL_EXCEPTIONS` and the code the same as it.
+
+    char lastLetter = noun.charAt(noun.length() - 1);
+    char penultimateLetter = (noun.length() == 1) ? '\u0000' : noun.charAt(noun.length() - 2);
+    if ((penultimateLetter == 'c' && lastLetter == 'h')
+        || lastLetter == 's'
+        || (penultimateLetter == 's' && lastLetter == 'h')
+        || lastLetter == 'x') {
+      return n + " " + noun + "es";
+    }
+    if (lastLetter == 'y'
+        && (penultimateLetter != 'a'
+            && penultimateLetter != 'e'
+            && penultimateLetter != 'i'
+            && penultimateLetter != 'o'
+            && penultimateLetter != 'u')) {
+      return n + " " + noun.substring(0, noun.length() - 1) + "ies";
+    }
+
+    // TODO:  Change nouns ending in "f" or "fe" to "ves" (knives, leaves, lives, wolves, calves),
+    // but beware that there are exceptions (roofs, fifes).
+
+    // TODO:
+    // Singular nouns ending in o preceded by a consonant in many cases spell the plural by adding
+    // -es: heroes,	potatoes, echoes.
+    // However, many nouns of foreign origin, including almost all Italian loanwords, add only -s:
+    // And also some other exceptions like volcanos.
+
+    return n + " " + noun + "s";
+  }
+
+  /**
+   * Returns either "n <em>noun</em>" or "n <em>noun</em>s" depending on the size of the collection.
+   * Adds "es" to words ending with "ch", "s", "sh", or "x". Adds "ies" to words ending with "y"
+   * when the previous letter is a consonant.
+   *
+   * @param c a collection whose size to test
+   * @param noun word being counted; must not be the empty string
+   * @return {@code noun}, if {@code c} has size 1; otherwise, pluralization of {@code noun}
+   * @throws IllegalArgumentException if the length of {@code noun} is 0
+   */
+  @SideEffectFree
+  public static String nPlural(Collection<?> c, String noun) {
+    return nPlural(c.size(), noun);
+  }
+
+  /**
+   * Returns either "n <em>noun</em>" or "n <em>noun</em>s" depending on the size of the collection.
+   * Adds "es" to words ending with "ch", "s", "sh", or "x". Adds "ies" to words ending with "y"
+   * when the previous letter is a consonant.
+   *
+   * @param m a map whose size to test
+   * @param noun word being counted; must not be the empty string
+   * @return {@code noun}, if {@code m} has size 1; otherwise, pluralization of {@code noun}
+   * @throws IllegalArgumentException if the length of {@code noun} is 0
+   */
+  @SideEffectFree
+  public static String nPlural(Map<?, ?> m, String noun) {
+    return nPlural(m.size(), noun);
+  }
+
+  /**
+   * Returns either "n <em>noun</em>" or "n <em>noun</em>s" depending on the size of the collection.
+   * Adds "es" to words ending with "ch", "s", "sh", or "x". Adds "ies" to words ending with "y"
+   * when the previous letter is a consonant.
+   *
+   * @param <T> the type of array elements
+   * @param a an array whose size to test
+   * @param noun word being counted; must not be the empty string
+   * @return {@code noun}, if {@code a} has size 1; otherwise, pluralization of {@code noun}
+   * @throws IllegalArgumentException if the length of {@code noun} is 0
+   */
+  @SideEffectFree
+  public static <T> String nPlural(T[] a, String noun) {
+    return nPlural(a.length, noun);
+  }
+
+  /** Exceptions to the usual English verb pluralization rules. */
+  private static final @Modifiable Map<String, String> V_PLURAL_EXCEPTIONS = new HashMap<>();
+
+  static {
+    V_PLURAL_EXCEPTIONS.put("is", "are");
+    V_PLURAL_EXCEPTIONS.put("was", "were");
+  }
+
+  /**
+   * Returns either the singular or plural form of the given verb, depending on {@code n}. Most
+   * English verbs have the same singular and plural form.
+   *
+   * <p>The implementation of this method hard-codes some irregular verbs, and otherwise returns its
+   * argument.
+   *
+   * @param n count
+   * @param verb verb whose subject is one or more things, depending on {@code n}
+   * @return {@code verb}, if n==1; otherwise, pluralization of {@code verb}
+   */
+  @SideEffectFree
+  public static String vPlural(int n, String verb) {
+    if (n == 1) {
+      return verb;
+    }
+    return V_PLURAL_EXCEPTIONS.getOrDefault(verb, verb);
+  }
+
+  /**
+   * Returns either the singular or plural form of the given verb, depending on the size of the
+   * collection. Most English verbs have the same singular and plural form.
+   *
+   * <p>The implementation of this method hard-codes some irregular verbs, and otherwise returns its
+   * argument.
+   *
+   * @param c a collection
+   * @param verb verb whose subject is one or more things, depending on the size of the collection
+   * @return {@code verb}, if n==1; otherwise, pluralization of {@code verb}
+   */
+  @SideEffectFree
+  public static String vPlural(Collection<?> c, String verb) {
+    return vPlural(c.size(), verb);
+  }
+
+  /**
+   * Returns either the singular or plural form of the given verb, depending on the size of the
+   * collection. Most English verbs have the same singular and plural form.
+   *
+   * <p>The implementation of this method hard-codes some irregular verbs, and otherwise returns its
+   * argument.
+   *
+   * @param m a map
+   * @param verb verb whose subject is one or more things, depending on the size of the collection
+   * @return {@code verb}, if n==1; otherwise, pluralization of {@code verb}
+   */
+  @SideEffectFree
+  public static String vPlural(Map<?, ?> m, String verb) {
+    return vPlural(m.size(), verb);
+  }
+
+  /**
+   * Returns either the singular or plural form of the given verb, depending on the size of the
+   * collection. Most English verbs have the same singular and plural form.
+   *
+   * <p>The implementation of this method hard-codes some irregular verbs, and otherwise returns its
+   * argument.
+   *
+   * @param <T> the type of array elements
+   * @param a an array
+   * @param verb verb whose subject is one or more things, depending on the size of the collection
+   * @return {@code verb}, if n==1; otherwise, pluralization of {@code verb}
+   */
+  @SideEffectFree
+  public static <T> String vPlural(T[] a, String verb) {
+    return vPlural(a.length, verb);
+  }
+
+  /**
+   * Returns either the singular or plural form of the noun and verb, depending on {@code n}.
+   *
+   * <p>Example uses:
+   *
+   * <pre>{@code
+   * StringsP.nvPlural(0, "fox", "was")  =  "0 foxes were"
+   * StringsP.nvPlural(1, "fox", "was")  =  "1 fox was"
+   * StringsP.nvPlural(2, "fox", "was")  =  "2 foxes were"
+   * }</pre>
+   *
+   * @param n count
+   * @param noun word being counted; must not be the empty string
+   * @param verb verb whose subject is one or more things, depending on {@code n}
+   * @return {@code noun verb}, if n==1; otherwise, its pluralization
+   * @see #nPlural(int, String)
+   * @see #vPlural(int, String)
+   */
+  @SideEffectFree
+  public static String nvPlural(int n, String noun, String verb) {
+    return nPlural(n, noun) + " " + vPlural(n, verb);
+  }
+
+  /**
+   * Returns either the singular or plural form of the given noun and verb, depending on the size of
+   * the collection.
+   *
+   * @param c a collection
+   * @param noun word being counted; must not be the empty string
+   * @param verb verb whose subject is one or more things, depending on the size of the collection
+   * @return {@code noun verb}, if n==1; otherwise, its pluralization
+   * @see #nPlural(int, String)
+   * @see #vPlural(int, String)
+   */
+  @SideEffectFree
+  public static String nvPlural(Collection<?> c, String noun, String verb) {
+    return nvPlural(c.size(), noun, verb);
+  }
+
+  /**
+   * Returns either the singular or plural form of the given noun and verb, depending on the size of
+   * the collection.
+   *
+   * @param m a map
+   * @param noun word being counted; must not be the empty string
+   * @param verb verb whose subject is one or more things, depending on the size of the collection
+   * @return {@code noun verb}, if n==1; otherwise, its pluralization
+   * @see #nPlural(int, String)
+   * @see #vPlural(int, String)
+   */
+  @SideEffectFree
+  public static String nvPlural(Map<?, ?> m, String noun, String verb) {
+    return nvPlural(m.size(), noun, verb);
+  }
+
+  /**
+   * Returns either the singular or plural form of the given noun and verb, depending on the size of
+   * the collection.
+   *
+   * @param <T> the type of array elements
+   * @param a an array
+   * @param noun word being counted; must not be the empty string
+   * @param verb verb whose subject is one or more things, depending on the size of the collection
+   * @return {@code noun verb}, if n==1; otherwise, its pluralization
+   * @see #nPlural(int, String)
+   * @see #vPlural(int, String)
+   */
+  @SideEffectFree
+  public static <T> String nvPlural(T[] a, String noun, String verb) {
+    return nvPlural(a.length, noun, verb);
+  }
+
+  /**
+   * Creates a conjunction or disjunction, like "a", "a or b", and "a, b, or c". Obeys the "serial
+   * comma" or "Oxford comma" rule: when the list has size 3 or larger, puts a comma after every
+   * element (except the last one, which ends the list).
+   *
+   * @param conjunction the conjunction word, like "and" or "or"
+   * @param elements the elements of the conjunction or disjunction
+   * @return a conjunction or disjunction string
+   */
+  @SuppressWarnings({
+    "allcheckers:purity.call", // side effect to local state
+    "lock:method.guarantee.violated" // needs JDK annotations
+  })
+  @SideEffectFree
+  public static String conjunction(
+      String conjunction, List<? extends @Signed @PolyNull Object> elements) {
+    int size = elements.size();
+    if (size == 0) {
+      throw new IllegalArgumentException("no elements passed to conjunction()");
+    } else if (size == 1) {
+      return Objects.toString(elements.get(0));
+    } else if (size == 2) {
+      return elements.get(0) + " " + conjunction + " " + elements.get(1);
+    }
+
+    StringJoiner sj = new StringJoiner(", ");
+    for (int i = 0; i < size - 1; i++) {
+      sj.add(Objects.toString(elements.get(i)));
+    }
+    sj.add(conjunction + " " + elements.get(size - 1));
+    return sj.toString();
+  }
+
+  // //////////////////////////////////////////////////////////////////////
+  // Miscellaneous
+  //
+
+  /**
+   * Returns the number of times the character appears in the string.
+   *
+   * @param s string to search in
+   * @param ch character to search for
+   * @return number of times the character appears in the string
+   */
+  @Pure
+  @StaticallyExecutable
+  public static int count(String s, int ch) {
+    int result = 0;
+    int pos = s.indexOf(ch);
+    while (pos > -1) {
+      result++;
+      pos = s.indexOf(ch, pos + 1);
+    }
+    return result;
+  }
+
+  /**
+   * Returns the number of times the second string appears in the first.
+   *
+   * @param s string to search in
+   * @param sub non-empty string to search for
+   * @return number of times the substring appears in the string
+   */
+  @Pure
+  @StaticallyExecutable
+  public static int count(String s, String sub) {
+    if (sub.equals("")) {
+      throw new IllegalArgumentException("second argument must not be empty");
+    }
+    int result = 0;
+    int pos = s.indexOf(sub);
+    while (pos > -1) {
+      result++;
+      pos = s.indexOf(sub, pos + 1);
+    }
+    return result;
+  }
+
+  /**
+   * Convert a number into an abbreviation such as "5.00K" for 5000 or "65.0M" for 65000000. K
+   * stands for 1000, not 1024; M stands for 1000000, not 1048576, etc. There are always exactly 3
+   * decimal digits of precision in the result (counting both sides of the decimal point).
+   *
+   * @param val a numeric value
+   * @return an abbreviated string representation of the value
+   */
+  @SideEffectFree
+  public static String abbreviateNumber(long val) {
+
+    double dval = (double) val;
+    String mag = "";
+
+    if (val < 1000) {
+      // nothing to do
+    } else if (val < 1_000_000) {
+      dval = val / 1000.0;
+      mag = "K";
+    } else if (val < 1_000_000_000) {
+      dval = val / 1_000_000.0;
+      mag = "M";
+    } else {
+      dval = val / 1_000_000_000.0;
+      mag = "G";
+    }
+
+    String precision = "0";
+    if (dval < 10) {
+      precision = "2";
+    } else if (dval < 100) {
+      precision = "1";
+    }
+
+    @SuppressWarnings("formatter") // format string computed from precision and mag
+    String result = String.format("%,1." + precision + "f" + mag, dval);
+    return result;
+  }
+
+  // From
+  // https://stackoverflow.com/questions/37413816/get-number-of-placeholders-in-formatter-format-string
+  /** Regex that matches a format specifier. Some correspond to arguments and some do not. */
+  private static @Regex(6) Pattern formatSpecifier =
+      Pattern.compile("%(\\d+\\$)?([-#+ 0,(\\<]*)?(\\d+)?(\\.\\d+)?([tT])?([a-zA-Z%])");
+
+  /**
+   * Returns the number of arguments that the given format string takes. This is the number of
+   * specifiers that take arguments (some, like {@code %n} and {@code %%}, do not take arguments).
+   *
+   * @param s a string
+   * @return the number of format specifiers in the string
+   */
+  @SuppressWarnings({
+    "allcheckers:purity.call", // side effect to local state; deterministic up to equals
+    "lock:method.guarantee.violated" // side effect to local state
+  })
+  @Pure
+  @StaticallyExecutable
+  public static int countFormatArguments(String s) {
+    int result = 0;
+    int maxIndex = 0;
+    Matcher matcher = formatSpecifier.matcher(s);
+    while (matcher.find()) {
+      String argumentIndex = matcher.group(1);
+      if (argumentIndex != null) {
+        @SuppressWarnings("lowerbound:argument") // group contains >= 2 chars
+        int thisIndex = Integer.parseInt(argumentIndex.substring(0, argumentIndex.length() - 1));
+        maxIndex = Math.max(maxIndex, thisIndex);
+        continue;
+      }
+      String conversion = matcher.group(6);
+      assert conversion != null : "@AssumeAssertion(nullness): nonempty capturing group";
+      if (!(conversion.equals("%") || conversion.equals("n"))) {
+        result++;
+      }
+    }
+    return Math.max(maxIndex, result);
+  }
+
+  /**
+   * If the string representation of the given object is greater than the given length, truncate it
+   * to that length.
+   *
+   * @param o an object
+   * @param length the maximum length for the string representation; must be 6 or more
+   * @return the string representation of the object, no more than the given length
+   */
+  @SideEffectFree
+  public static String toStringTruncated(Object o, int length) {
+    if (length < 6) {
+      throw new IllegalArgumentException(
+          "toStringTruncated: length argument must be 6 or more, got " + length);
+    }
+    String result = o.toString();
+    if (result.length() <= length) {
+      return result;
+    } else {
+      // The quoting increases the likelihood that all delimiters are balanced in the result.
+      // That makes it easier to manipulate the result (such as skipping over it) in an
+      // editor.  The quoting also makes clear that the value is truncated.
+      return "\"" + result.substring(0, length - 5) + "...\"";
+    }
+  }
+}

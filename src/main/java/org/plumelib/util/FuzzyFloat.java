@@ -14,41 +14,51 @@ import org.checkerframework.dataflow.qual.Pure;
  * <p>Floating-point numbers are compared for equality by dividing them by one another and comparing
  * the ratio. By default, they must be within 0.0001 (0.01%) to be considered equal.
  *
- * <p>Zero is never considered equal to a non-zero number, no matter how small its value.
+ * <p>Zero is considered equal to a non-zero number only if the non-zero number's magnitude is less
+ * than the square of the fuzzy ratio.
  *
  * <p>Two NaN floats are not considered equal (consistent with the == operator).
+ *
+ * <p>This class is serializable so that its non-static inner class {@link
+ * DoubleArrayComparatorLexical}, which holds an implicit reference to the enclosing FuzzyFloat, can
+ * be serialized.
  */
-public class FuzzyFloat {
+public class FuzzyFloat implements Serializable {
+
+  /** Unique identifier for serialization. If you add or remove fields, change this number. */
+  private static final long serialVersionUID = 20250723L;
 
   /** Default relative difference between two values such that this class considers them equal. */
-  double DEFAULT_RELATIVE_RATIO = .0001;
+  private static final double DEFAULT_RELATIVE_RATIO = .0001;
 
   /** Minimum ratio between two floats, such that this class considers them equal. */
-  double minRatio;
+  private double minRatio;
+
   /** Maximum ratio between two floats, such that this class considers them equal. */
-  double maxRatio;
+  private double maxRatio;
 
   /**
    * True if this class does approximate (fuzzy) arithmetic comparisons. If false, this class does
-   * exact matching
+   * exact matching.
    *
    * <p>ratio test turned off. This occurs exactly if the class is instantiated with the relative
    * difference 0.
    */
-  boolean exactComparisons = false;
+  private boolean exactComparisons = false;
 
   /** Creates a FuzzyFloat with the default relativeRatio value of .0001. */
   public FuzzyFloat() {
-    setRelativeRatio(DEFAULT_RELATIVE_RATIO);
+    this(DEFAULT_RELATIVE_RATIO);
   }
 
   /**
    * Creates a FuzzyFloat. Specify the specific relative difference allowed between two floats in
-   * order for them to be equal. The default is 0.0001. A relative diff of zero, disables it (i.e.,
+   * order for them to be equal. The default is 0.0001. A relative diff of zero disables it (i.e.,
    * this class's methods work just like regular Java arithmetic comparisons).
    *
    * @param relativeRatio the relative diff to use; see {@link #setRelativeRatio}
    */
+  @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
   public FuzzyFloat(double relativeRatio) {
     setRelativeRatio(relativeRatio);
   }
@@ -73,7 +83,7 @@ public class FuzzyFloat {
    * Test d1 and d2 for equality using the current ratio. Two NaN floats are not considered equal
    * (consistent with the == operator).
    *
-   * <p>Note that if one of the numbers if 0.0, then the other number must be less than the square
+   * <p>Note that if one of the numbers is 0.0, then the other number must be less than the square
    * of the fuzzy ratio. This policy accommodates roundoff errors in floating-point values.
    *
    * @param d1 the first value to compare
@@ -85,19 +95,19 @@ public class FuzzyFloat {
 
     // NaNs are not considered equal.
     if (Double.isNaN(d1) && Double.isNaN(d2)) {
-      return (false);
+      return false;
     }
 
     // if zero was specified for a ratio, don't do the divide.  You might
     // get slightly different answers.  And this should be faster.
     if (exactComparisons) {
-      return (d1 == d2);
+      return d1 == d2;
     }
 
     // slightly more efficient for matches and catches positive and negative
     // infinity (which match in this test, but not below)
     if (d1 == d2) {
-      return (true);
+      return true;
     }
 
     // When one number is 0, require that the other is less than the square of the fuzzy ratio.
@@ -109,16 +119,16 @@ public class FuzzyFloat {
 
       if (d1 == 0.0) {
 
-        return (Math.abs(d2) < zeroTolerance);
+        return Math.abs(d2) < zeroTolerance;
 
       } else {
 
-        return (Math.abs(d1) < zeroTolerance);
+        return Math.abs(d1) < zeroTolerance;
       }
     }
 
     double ratio = d1 / d2;
-    return ((ratio >= minRatio) && (ratio <= maxRatio));
+    return (ratio >= minRatio) && (ratio <= maxRatio);
   }
 
   /**
@@ -126,12 +136,12 @@ public class FuzzyFloat {
    *
    * @param d1 the first value to compare
    * @param d2 the second value to compare
-   * @return whether d1 and d2 are non-equal
+   * @return true if d1 and d2 are non-equal
    * @see #eq
    */
   @Pure
   public boolean ne(double d1, double d2) {
-    return (!eq(d1, d2));
+    return !eq(d1, d2);
   }
 
   /**
@@ -140,12 +150,12 @@ public class FuzzyFloat {
    *
    * @param d1 the first value to compare
    * @param d2 the second value to compare
-   * @return whether d1 &lt; d2
+   * @return true if d1 &lt; d2
    * @see #eq
    */
   @Pure
   public boolean lt(double d1, double d2) {
-    return ((d1 < d2) && ne(d1, d2));
+    return (d1 < d2) && ne(d1, d2);
   }
 
   /**
@@ -154,40 +164,40 @@ public class FuzzyFloat {
    *
    * @param d1 the first value to compare
    * @param d2 the second value to compare
-   * @return whether d1 &le; d2
+   * @return true if d1 &le; d2
    * @see #eq
    */
   @Pure
   public boolean lte(double d1, double d2) {
-    return ((d1 <= d2) || eq(d1, d2));
+    return (d1 <= d2) || eq(d1, d2);
   }
 
   /**
-   * test d1 and d2 for {@code d1 > d2}. IF d1 is equal to d2 using the current ratio, this returns
+   * Test d1 and d2 for {@code d1 > d2}. If d1 is equal to d2 using the current ratio, this returns
    * false.
    *
    * @param d1 the first value to compare
    * @param d2 the second value to compare
-   * @return whether d1 &gt; d2
+   * @return true if d1 &gt; d2
    * @see #eq
    */
   @Pure
   public boolean gt(double d1, double d2) {
-    return ((d1 > d2) && ne(d1, d2));
+    return (d1 > d2) && ne(d1, d2);
   }
 
   /**
-   * test d1 and d2 for {@code d1 >= d2}. If d1 is equal to d2 using the current ratio, this returns
+   * Test d1 and d2 for {@code d1 >= d2}. If d1 is equal to d2 using the current ratio, this returns
    * true.
    *
    * @param d1 the first value to compare
    * @param d2 the second value to compare
-   * @return whether d1 &ge; d2
+   * @return true if d1 &ge; d2
    * @see #eq
    */
   @Pure
   public boolean gte(double d1, double d2) {
-    return ((d1 >= d2) || eq(d1, d2));
+    return (d1 >= d2) || eq(d1, d2);
   }
 
   /**
@@ -233,14 +243,14 @@ public class FuzzyFloat {
           continue outer;
         }
       }
-      return (i);
+      return i;
     }
-    return (-1);
+    return -1;
   }
 
   /**
-   * Determines whether or not a1 and a2 are set equivalent (contain only the same elements).
-   * Element comparison uses {@link #eq}.
+   * Returns true if a1 and a2 are set equivalent (contain only the same elements). Element
+   * comparison uses {@link #eq}.
    *
    * <p>Note that this implementation is optimized for cases where the elements are actually the
    * same, since it does a sort of both arrays before starting the comparisons.
@@ -263,8 +273,7 @@ public class FuzzyFloat {
     // look for elements of a2 in a1
     int start = 0;
     outer1:
-    for (int i = 0; i < a2.length; i++) {
-      double val = a2[i];
+    for (double val : a2) {
       for (int j = start; j < a1.length; j++) {
         if (eq(val, a1[j])) {
           start = j;
@@ -272,73 +281,46 @@ public class FuzzyFloat {
         }
         if (val < a1[j]) {
           // System.out.println ("isElemMatch: " + val + " " + a1[j]);
-          return (false);
+          return false;
         }
       }
       // System.out.println ("isElemMatch: " + i);
-      return (false);
+      return false;
     }
 
     // look for elements of a1 in a2
     start = 0;
     outer2:
-    for (int i = 0; i < a1.length; i++) {
-      double val = a1[i];
+    for (double val : a1) {
       for (int j = start; j < a2.length; j++) {
         if (eq(val, a2[j])) {
           start = j;
           continue outer2;
         }
         if (val < a2[j]) {
-          // System.out.println ("isElemMatch: " + val + " " + a2[j]);
-          return (false);
+          return false;
         }
       }
-      // System.out.println ("isElemMatch: " + i);
-      return (false);
+      return false;
     }
 
-    return (true);
+    return true;
   }
-
-  // Slightly more efficient method that will miss some matches
-  //     int i = 0;
-  //     int j = 0;
-  //     while (i < a1.length && j < a2.length) {
-  //       if (ne (a1[i], a2[j])) {
-  //         System.out.println ("isElemMatch: " + a1[i] + " " + a2[j]);
-  //         return (false);
-  //       }
-  //       double val = a1[i];
-  //       i++;
-  //       while ((i < a1.length) && (eq (a1[i], val))) {
-  //         i++;
-  //       }
-  //       j++;
-  //       while ((j < a2.length) && (eq (a2[j], val))) {
-  //         j++;
-  //       }
-  //     }
-
-  //     // if there are any elements left, then they don't match.
-  //     if ((i != a1.length) || (j != a2.length)) {
-  //       System.out.println ("isElemMatch: " + i + " " + j);
-  //       return (false);
-  //     }
-
-  //     return (true);
-  //     }
 
   /** Lexically compares two double arrays. */
   public class DoubleArrayComparatorLexical implements Comparator<double[]>, Serializable {
-    static final long serialVersionUID = 20150812L;
+    /** Unique identifier for serialization. If you add or remove fields, change this number. */
+    private static final long serialVersionUID = 20150812L;
+
+    /** Create a new DoubleArrayComparatorLexical. */
+    public DoubleArrayComparatorLexical() {}
 
     /**
-     * Lexically compares o1 and o2 as double arrays.
+     * Lexically compares a1 and a2 as double arrays.
      *
      * @param a1 the first array to compare
      * @param a2 the second array to compare
-     * @return positive if o1 &gt; 02, 0 if o1 == o2, negative if o1 &lt; o2
+     * @return positive if a1 &gt; a2, 0 if a1 == a2, negative if a1 &lt; a2
      */
     @Pure
     @Override
@@ -349,7 +331,7 @@ public class FuzzyFloat {
       int len = Math.min(a1.length, a2.length);
       for (int i = 0; i < len; i++) {
         if (ne(a1[i], a2[i])) {
-          return ((a1[i] > a2[i]) ? 1 : -1);
+          return (a1[i] > a2[i]) ? 1 : -1;
         }
       }
       return a1.length - a2.length;
@@ -357,14 +339,14 @@ public class FuzzyFloat {
   }
 
   /**
-   * Determines whether smaller is a subset of bigger. Element comparison uses {@link #eq}.
+   * Returns true if smaller is a subset of bigger. Element comparison uses {@link #eq}.
    *
    * <p>Note that this implementation is optimized for cases where the elements are actually the
    * same, since it does a sort of both arrays before starting the comparisons.
    *
    * @param smaller the possibly-smaller subset
    * @param bigger the possibly-larger set
-   * @return true if smaller is a subset (each element of smaller is also a element of bigger) of
+   * @return true if smaller is a subset (each element of smaller is also an element of bigger) of
    *     bigger, false otherwise
    */
   @SuppressWarnings({"allcheckers:purity", "lock"}) // side effect to local state (arrays)
@@ -381,20 +363,19 @@ public class FuzzyFloat {
     // look for elements of smaller in bigger
     int start = 0;
     outer1:
-    for (int i = 0; i < smaller.length; i++) {
-      double val = smaller[i];
+    for (double val : smaller) {
       for (int j = start; j < bigger.length; j++) {
         if (eq(val, bigger[j])) {
           start = j;
           continue outer1;
         }
         if (val < bigger[j]) {
-          return (false);
+          return false;
         }
       }
-      return (false);
+      return false;
     }
 
-    return (true);
+    return true;
   }
 }

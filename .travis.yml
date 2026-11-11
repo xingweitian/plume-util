@@ -11,14 +11,10 @@ cache:
     - $HOME/.m2/
 
 jdk:
-  - openjdk8
-## TODO: enable after require-javadoc handles JDK 11
-#  - oraclejdk11
-#  - openjdk11
+  - openjdk21
+  - openjdk25
 
-# Add "verGJF" task when google-java-format handles type annotations better;
-# see https://github.com/google/google-java-format/issues/5
-script: ./gradlew --stacktrace build javadoc && ./gradlew requireJavadoc
+script: ./gradlew build
 
 git:
   depth: 9

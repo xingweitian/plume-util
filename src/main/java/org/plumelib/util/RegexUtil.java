@@ -3,6 +3,9 @@
 
 package org.plumelib.util;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
@@ -27,7 +30,7 @@ public final class RegexUtil {
 
   /** This class is a collection of methods; it does not represent anything. */
   private RegexUtil() {
-    throw new Error("do not instantiate");
+    throw new UnsupportedOperationException("do not instantiate");
   }
 
   /**
@@ -60,6 +63,7 @@ public final class RegexUtil {
    */
   public static class CheckedPatternSyntaxException extends Exception {
 
+    /** Unique identifier for serialization. If you add or remove fields, change this number. */
     private static final long serialVersionUID = 6266881831979001480L;
 
     /** The PatternSyntaxException that this is a wrapper around. */
@@ -74,6 +78,7 @@ public final class RegexUtil {
      * @param pse the PatternSyntaxException to be wrapped
      */
     public CheckedPatternSyntaxException(PatternSyntaxException pse) {
+      super();
       this.pse = pse;
     }
 
@@ -116,7 +121,7 @@ public final class RegexUtil {
      * @return the full detail message
      */
     @Override
-    @Pure
+    @SideEffectFree
     public String getMessage(@GuardSatisfied CheckedPatternSyntaxException this) {
       return pse.getMessage();
     }
@@ -152,9 +157,9 @@ public final class RegexUtil {
    * @return true iff s is a regular expression with {@code groups} groups
    */
   @SuppressWarnings({
-    "regex",
-    "allcheckers:deterministic"
-  }) // RegexUtil; for purity, catches an exception
+    "regex", // RegexUtil
+    "allcheckers:purity.catch" // catch block returns boolean
+  })
   @Pure
   // @EnsuresQualifierIf annotation is extraneous because this method is special-cased
   // in RegexTransfer.
@@ -177,7 +182,7 @@ public final class RegexUtil {
    */
   @SuppressWarnings({
     "regex",
-    "allcheckers:purity.not.deterministic.call",
+    "allcheckers:purity.call",
     "lock"
   }) // RegexUtil; temp value used in pure method is equal up to equals but not up to ==
   @Pure
@@ -330,5 +335,92 @@ public final class RegexUtil {
   @Pure
   private static int getGroupCount(Pattern p) {
     return p.matcher("").groupCount();
+  }
+
+  /**
+   * Returns the strings such that any one of the regexes matches it.
+   *
+   * @param strings a collection of strings
+   * @param regexes a collection of regular expressions
+   * @return the strings such that any one of the regexes matches it
+   */
+  public static List<String> matchesSomeRegex(
+      Collection<String> strings, Collection<@Regex String> regexes) {
+    List<Pattern> patterns = CollectionsP.mapList(Pattern::compile, regexes);
+    List<String> result = new ArrayList<>(strings.size());
+    for (String s : strings) {
+      for (Pattern p : patterns) {
+        if (p.matcher(s).matches()) {
+          result.add(s);
+          break;
+        }
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Returns true if every string is matched by at least one regex.
+   *
+   * @param strings a collection of strings
+   * @param regexes a collection of regular expressions
+   * @return true if every string is matched by at least one regex
+   */
+  public static boolean everyStringMatchesSomeRegex(
+      Collection<String> strings, Collection<@Regex String> regexes) {
+    List<Pattern> patterns = CollectionsP.mapList(Pattern::compile, regexes);
+    outer:
+    for (String s : strings) {
+      for (Pattern p : patterns) {
+        if (p.matcher(s).matches()) {
+          continue outer;
+        }
+      }
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Returns the strings that are matched by no regex.
+   *
+   * @param strings a collection of strings
+   * @param regexes a collection of regular expressions
+   * @return the strings such that none of the regexes matches it
+   */
+  public static List<String> matchesNoRegex(
+      Collection<String> strings, Collection<@Regex String> regexes) {
+    List<Pattern> patterns = CollectionsP.mapList(Pattern::compile, regexes);
+    List<String> result = new ArrayList<>(strings.size());
+    outer:
+    for (String s : strings) {
+      for (Pattern p : patterns) {
+        if (p.matcher(s).matches()) {
+          continue outer;
+        }
+      }
+      result.add(s);
+    }
+    return result;
+  }
+
+  /**
+   * Returns true if no string is matched by any regex.
+   *
+   * @param strings a collection of strings
+   * @param regexes a collection of regular expressions
+   * @return true if no string is matched by any regex
+   */
+  public static boolean noStringMatchesAnyRegex(
+      Collection<String> strings, Collection<@Regex String> regexes) {
+    for (String regex : regexes) {
+      Pattern p = Pattern.compile(regex);
+      for (String s : strings) {
+        if (p.matcher(s).matches()) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 }

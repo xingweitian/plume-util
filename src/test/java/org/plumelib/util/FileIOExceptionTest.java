@@ -1,6 +1,5 @@
 package org.plumelib.util;
 
-@SuppressWarnings({
-  "UseCorrectAssertInTests" // `assert` works fine in tests
-})
-public final class FileIOExceptionTest {}
+final class FileIOExceptionTest {
+  FileIOExceptionTest() {}
+}

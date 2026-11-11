@@ -1,0 +1,2034 @@
+package org.plumelib.util;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
+import org.checkerframework.checker.index.qual.IndexFor;
+import org.checkerframework.checker.index.qual.LessThan;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.PolyUpperBound;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
+import org.checkerframework.checker.modifiability.qual.Unshrinkable;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.signedness.qual.Unsigned;
+import org.checkerframework.common.value.qual.ArrayLen;
+import org.checkerframework.common.value.qual.MinLen;
+import org.checkerframework.common.value.qual.StaticallyExecutable;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
+
+/** Mathematical utilities. */
+public final class MathP {
+
+  /** This class is a collection of methods; it does not represent anything. */
+  private MathP() {
+    throw new UnsupportedOperationException("do not instantiate");
+  }
+
+  //
+  // Function versions of Java operators
+  //
+
+  /**
+   * Negates its argument.
+   *
+   * @param a value to negate
+   * @return negative of a
+   */
+  @Pure
+  @StaticallyExecutable
+  public static int negate(int a) {
+    return -a;
+  }
+
+  /**
+   * Negates its argument.
+   *
+   * @param a value to negate
+   * @return negative of a
+   */
+  @Pure
+  @StaticallyExecutable
+  public static long negate(long a) {
+    return -a;
+  }
+
+  /**
+   * Negates its argument.
+   *
+   * @param a value to negate
+   * @return negative of a
+   */
+  @Pure
+  @StaticallyExecutable
+  public static double negate(double a) {
+    return -a;
+  }
+
+  /**
+   * Returns ~a, the bitwise complement of its argument.
+   *
+   * @param a value to bitwise-complement
+   * @return ~a, the bitwise complement of a
+   */
+  @Pure
+  @StaticallyExecutable
+  public static int bitwiseComplement(int a) {
+    return ~a;
+  }
+
+  /**
+   * Returns ~a, the bitwise complement of its argument.
+   *
+   * @param a value to bitwise-complement
+   * @return ~a, the bitwise complement of a
+   */
+  @Pure
+  @StaticallyExecutable
+  public static long bitwiseComplement(long a) {
+    return ~a;
+  }
+
+  /**
+   * Multiplies its arguments.
+   *
+   * @param x first multiplicand
+   * @param y second multiplicand
+   * @return x * y
+   */
+  @Pure
+  @StaticallyExecutable
+  public static int mul(int x, int y) {
+    return x * y;
+  }
+
+  /**
+   * Multiplies its arguments.
+   *
+   * @param x first multiplicand
+   * @param y second multiplicand
+   * @return x * y
+   */
+  @Pure
+  @StaticallyExecutable
+  public static long mul(long x, long y) {
+    return x * y;
+  }
+
+  /**
+   * Multiplies its arguments.
+   *
+   * @param x first multiplicand
+   * @param y second multiplicand
+   * @return x * y
+   */
+  @Pure
+  @StaticallyExecutable
+  public static double mul(double x, double y) {
+    return x * y;
+  }
+
+  /**
+   * Divides its arguments.
+   *
+   * @param x dividend
+   * @param y divisor
+   * @return x / y
+   */
+  @Pure
+  @StaticallyExecutable
+  public static int div(int x, int y) {
+    return x / y;
+  }
+
+  /**
+   * Divides its arguments.
+   *
+   * @param x dividend
+   * @param y divisor
+   * @return x / y
+   */
+  @Pure
+  @StaticallyExecutable
+  public static long div(long x, long y) {
+    return x / y;
+  }
+
+  /**
+   * Divides its arguments.
+   *
+   * @param x dividend
+   * @param y divisor
+   * @return x / y
+   */
+  @Pure
+  @StaticallyExecutable
+  public static double div(double x, double y) {
+    return x / y;
+  }
+
+  /**
+   * Returns x % y, the modulus operation applied to its arguments.
+   *
+   * @param x value to be modded
+   * @param y modulus
+   * @return x % y
+   */
+  @Pure
+  @StaticallyExecutable
+  public static int mod(int x, int y) {
+    return x % y;
+  }
+
+  /**
+   * Returns x % y, the modulus operation applied to its arguments.
+   *
+   * @param x value to be modded
+   * @param y modulus
+   * @return x % y
+   */
+  @Pure
+  @StaticallyExecutable
+  public static long mod(long x, long y) {
+    return x % y;
+  }
+
+  /**
+   * Returns x &lt;&lt; y, the left-shift operation applied to its arguments.
+   *
+   * @param x value to be left-shifted
+   * @param y magnitude of the left-shift
+   * @return x &lt;&lt; y
+   */
+  @Pure
+  @StaticallyExecutable
+  public static int lshift(int x, int y) {
+    return x << y;
+  }
+
+  /**
+   * Returns x &lt;&lt; y, the left-shift operation applied to its arguments.
+   *
+   * @param x value to be left-shifted
+   * @param y magnitude of the left-shift
+   * @return x &lt;&lt; y
+   */
+  @Pure
+  @StaticallyExecutable
+  public static long lshift(long x, long y) {
+    return x << y;
+  }
+
+  /**
+   * Returns x &gt;&gt; y, the signed right-shift operation applied to its arguments.
+   *
+   * @param x value to be right-shifted
+   * @param y magnitude of the right-shift
+   * @return x &gt;&gt; y
+   */
+  @Pure
+  @StaticallyExecutable
+  public static int rshiftSigned(int x, int y) {
+    return x >> y;
+  }
+
+  /**
+   * Returns x &gt;&gt; y, the signed right-shift operation applied to its arguments.
+   *
+   * @param x value to be right-shifted
+   * @param y magnitude of the right-shift
+   * @return x &gt;&gt; y
+   */
+  @Pure
+  @StaticallyExecutable
+  public static long rshiftSigned(long x, long y) {
+    return x >> y;
+  }
+
+  /**
+   * Returns x &gt;&gt;&gt; y, the unsigned right-shift operation applied to its arguments.
+   *
+   * @param x value to be right-shifted
+   * @param y magnitude of the right-shift
+   * @return x &gt;&gt;&gt; y
+   */
+  @Pure
+  @StaticallyExecutable
+  public static @Unsigned int rshiftUnsigned(@Unsigned int x, int y) {
+    return x >>> y;
+  }
+
+  /**
+   * Returns x &gt;&gt;&gt; y, the unsigned right-shift operation applied to its arguments.
+   *
+   * @param x value to be right-shifted
+   * @param y magnitude of the right-shift
+   * @return x &gt;&gt;&gt; y
+   */
+  @Pure
+  @StaticallyExecutable
+  public static @Unsigned long rshiftUnsigned(@Unsigned long x, long y) {
+    return x >>> y;
+  }
+
+  /**
+   * Returns x &amp; y, the bitwise and of its arguments.
+   *
+   * @param x first operand
+   * @param y second operand
+   * @return x &amp; y
+   */
+  @Pure
+  @StaticallyExecutable
+  public static int bitwiseAnd(int x, int y) {
+    return x & y;
+  }
+
+  /**
+   * Returns x &amp; y, the bitwise and of its arguments.
+   *
+   * @param x first operand
+   * @param y second operand
+   * @return x &amp; y
+   */
+  @Pure
+  @StaticallyExecutable
+  public static long bitwiseAnd(long x, long y) {
+    return x & y;
+  }
+
+  /**
+   * Returns the logical and of its arguments. The result is always 0 or 1.
+   *
+   * @param x first operand
+   * @param y second operand
+   * @return the logical and of x and y; the result is always 0 or 1
+   */
+  @Pure
+  @StaticallyExecutable
+  public static int logicalAnd(int x, int y) {
+    return ((x != 0) && (y != 0)) ? 1 : 0;
+  }
+
+  /**
+   * Returns the logical and of its arguments. The result is always 0 or 1.
+   *
+   * @param x first operand
+   * @param y second operand
+   * @return the logical and of x and y; the result is always 0 or 1
+   */
+  @Pure
+  @StaticallyExecutable
+  public static long logicalAnd(long x, long y) {
+    return ((x != 0) && (y != 0)) ? 1 : 0;
+  }
+
+  /**
+   * Returns x ^ y, the bitwise xor of its arguments.
+   *
+   * @param x first operand
+   * @param y second operand
+   * @return x ^ y
+   */
+  @Pure
+  @StaticallyExecutable
+  public static int bitwiseXor(int x, int y) {
+    return x ^ y;
+  }
+
+  /**
+   * Returns x ^ y, the bitwise xor of its arguments.
+   *
+   * @param x first operand
+   * @param y second operand
+   * @return x ^ y
+   */
+  @Pure
+  @StaticallyExecutable
+  public static long bitwiseXor(long x, long y) {
+    return x ^ y;
+  }
+
+  /**
+   * Returns the logical xor of its arguments. The result is always 0 or 1.
+   *
+   * @param x first operand
+   * @param y second operand
+   * @return the logical xor of x and y; the result is always 0 or 1
+   */
+  @Pure
+  @StaticallyExecutable
+  public static int logicalXor(int x, int y) {
+    return ((x != 0) ^ (y != 0)) ? 1 : 0;
+  }
+
+  /**
+   * Returns the logical xor of its arguments. The result is always 0 or 1.
+   *
+   * @param x first operand
+   * @param y second operand
+   * @return the logical xor of x and y; the result is always 0 or 1
+   */
+  @Pure
+  @StaticallyExecutable
+  public static long logicalXor(long x, long y) {
+    return ((x != 0) ^ (y != 0)) ? 1 : 0;
+  }
+
+  /**
+   * Returns x | y, the bitwise or of its arguments.
+   *
+   * @param x first operand
+   * @param y second operand
+   * @return x | y
+   */
+  @Pure
+  @StaticallyExecutable
+  public static int bitwiseOr(int x, int y) {
+    return x | y;
+  }
+
+  /**
+   * Returns x | y, the bitwise or of its arguments.
+   *
+   * @param x first operand
+   * @param y second operand
+   * @return x | y
+   */
+  @Pure
+  @StaticallyExecutable
+  public static long bitwiseOr(long x, long y) {
+    return x | y;
+  }
+
+  /**
+   * Returns the logical or of its arguments. The result is always 0 or 1.
+   *
+   * @param x first operand
+   * @param y second operand
+   * @return the logical or of x and y; the result is always 0 or 1
+   */
+  @Pure
+  @StaticallyExecutable
+  public static int logicalOr(int x, int y) {
+    return ((x != 0) || (y != 0)) ? 1 : 0;
+  }
+
+  /**
+   * Returns the logical or of its arguments. The result is always 0 or 1.
+   *
+   * @param x first operand
+   * @param y second operand
+   * @return the logical or of x and y; the result is always 0 or 1
+   */
+  @Pure
+  @StaticallyExecutable
+  public static long logicalOr(long x, long y) {
+    return ((x != 0) || (y != 0)) ? 1 : 0;
+  }
+
+  //
+  // sign
+  //
+
+  /**
+   * Returns the sign of its argument. The result is always -1, 0, or 1.
+   *
+   * @param a value to have its sign taken
+   * @return the sign of a: -1, 0, or 1
+   */
+  @Pure
+  @StaticallyExecutable
+  public static int sign(int a) {
+    if (a == 0) {
+      return 0;
+    } else if (a > 0) {
+      return 1;
+    } else {
+      return -1;
+    }
+  }
+
+  //
+  // exponentiation
+  //
+
+  /**
+   * Returns the value of the first argument raised to the power of the second argument. The
+   * arguments are integers.
+   *
+   * @param base the base
+   * @param expt the exponent
+   * @return base to the expt power
+   * @see Math#pow(double, double)
+   */
+  @Pure
+  @StaticallyExecutable
+  public static int pow(int base, int expt) {
+    return powFast(base, expt);
+  }
+
+  /**
+   * Returns the value of the first argument raised to the power of the second argument.
+   *
+   * @param base the base
+   * @param expt the exponent
+   * @return base to the expt power
+   * @see Math#pow(double, double)
+   */
+  @Pure
+  @StaticallyExecutable
+  public static long pow(long base, long expt) {
+    return powFast(base, expt);
+  }
+
+  /**
+   * Returns the value of the first argument raised to the power of the second argument. Uses a fast
+   * algorithm.
+   *
+   * @param base the base
+   * @param expt the exponent
+   * @return base to the expt power
+   * @see Math#pow(double, double)
+   */
+  @Pure
+  @StaticallyExecutable
+  private static int powFast(int base, int expt) {
+    if (expt < 0) {
+      throw new ArithmeticException("Negative exponent passed to pow");
+    }
+
+    int result = 1;
+    for (int thisSquarePow = base; expt > 0; expt >>= 1, thisSquarePow *= thisSquarePow) {
+      if ((expt & 1) != 0) {
+        result *= thisSquarePow;
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Returns the first argument raised to the power of the second argument. Uses a fast algorithm.
+   *
+   * @param base the base
+   * @param expt the exponent
+   * @return base to the expt power
+   * @see Math#pow(double, double)
+   */
+  @Pure
+  @StaticallyExecutable
+  private static long powFast(long base, long expt) {
+    if (expt < 0) {
+      throw new ArithmeticException("Negative exponent passed to pow");
+    }
+
+    long result = 1;
+    for (long thisSquarePow = base; expt > 0; expt >>= 1, thisSquarePow *= thisSquarePow) {
+      if ((expt & 1) != 0) {
+        result *= thisSquarePow;
+      }
+    }
+    return result;
+  }
+
+  // /**
+  //  * Returns the first argument raised to the power of the second argument. Uses a slow
+  //  * algorithm.
+  //  *
+  //  * @param base the base
+  //  * @param expt the exponent
+  //  * @return base to the expt power
+  //  * @see Math#pow(double, double)
+  //  */
+  // @Pure
+  // @StaticallyExecutable
+  // private static int powSlow(int base, int expt) {
+  //   if (expt < 0) {
+  //     throw new ArithmeticException("Negative exponent passed to pow");
+  //   }
+  //
+  //   int result = 1;
+  //   for (int i = 0; i < expt; i++) {
+  //     result *= base;
+  //   }
+  //   return result;
+  // }
+
+  //
+  // gcd
+  //
+
+  /**
+   * Returns the greatest common divisor of the two arguments.
+   *
+   * @param a first operand
+   * @param b second operand
+   * @return greatest common divisor of a and b
+   */
+  @Pure
+  @StaticallyExecutable
+  public static int gcd(int a, int b) {
+
+    // Euclid's method
+    if (b == 0) {
+      return Math.abs(a);
+    }
+    a = Math.abs(a);
+    b = Math.abs(b);
+    while (b != 0) {
+      int tmp = b;
+      b = a % b;
+      a = tmp;
+    }
+    return a;
+  }
+
+  /**
+   * Returns the greatest common divisor of the elements of int array a.
+   *
+   * @param a array of operands
+   * @return greatest common divisor of the elements of a
+   */
+  @Pure
+  @StaticallyExecutable
+  public static int gcd(int[] a) {
+    if (a.length == 0) {
+      return 0;
+    }
+    int result = a[0];
+    for (int i = 1; i < a.length; i++) {
+      result = gcd(a[i], result);
+      if ((result == 1) || (result == 0)) {
+        return result;
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Returns the gcd (greatest common divisor) of the differences between the elements of int array
+   * a.
+   *
+   * @param a array of operands
+   * @return greatest common divisor of the differences between the elements of a
+   */
+  @Pure
+  @StaticallyExecutable
+  public static int gcdDifferences(int[] a) {
+    if (a.length < 2) {
+      return 0;
+    }
+    int result = a[1] - a[0];
+    for (int i = 2; i < a.length; i++) {
+      result = gcd(a[i] - a[i - 1], result);
+      if ((result == 1) || (result == 0)) {
+        return result;
+      }
+    }
+    return result;
+  }
+
+  // gcd -- version for manipulating long (rather than int) values
+
+  /**
+   * Returns the greatest common divisor of the two arguments.
+   *
+   * @param a first operand
+   * @param b second operand
+   * @return greatest common divisor of a and b
+   */
+  @Pure
+  @StaticallyExecutable
+  public static long gcd(long a, long b) {
+
+    // Euclid's method
+    if (b == 0) {
+      return Math.abs(a);
+    }
+    a = Math.abs(a);
+    b = Math.abs(b);
+    while (b != 0) {
+      long tmp = b;
+      b = a % b;
+      a = tmp;
+    }
+    return a;
+  }
+
+  /**
+   * Returns the greatest common divisor of the elements of long array a.
+   *
+   * @param a array of operands
+   * @return greatest common divisor of the elements of a
+   */
+  @Pure
+  @StaticallyExecutable
+  public static long gcd(long[] a) {
+    if (a.length == 0) {
+      return 0;
+    }
+    long result = a[0];
+    for (int i = 1; i < a.length; i++) {
+      result = gcd(a[i], result);
+      if ((result == 1) || (result == 0)) {
+        return result;
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Returns the gcd (greatest common divisor) of the differences between the elements of long array
+   * a.
+   *
+   * @param a array of operands
+   * @return greatest common divisor of the differences between the elements of a
+   */
+  @Pure
+  @StaticallyExecutable
+  public static long gcdDifferences(long[] a) {
+    if (a.length < 2) {
+      return 0;
+    }
+    long result = a[1] - a[0];
+    for (int i = 2; i < a.length; i++) {
+      result = gcd(a[i] - a[i - 1], result);
+      if ((result == 1) || (result == 0)) {
+        return result;
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Returns the greatest common divisor of the two arguments.
+   *
+   * @param a first operand
+   * @param b second operand
+   * @return greatest common divisor of a and b
+   */
+  @Pure
+  @StaticallyExecutable
+  public static double gcd(double a, double b) {
+
+    if (a == Double.POSITIVE_INFINITY
+        || a == Double.NEGATIVE_INFINITY
+        || Double.isNaN(a)
+        || b == Double.POSITIVE_INFINITY
+        || b == Double.NEGATIVE_INFINITY
+        || Double.isNaN(b)) {
+      return Double.NaN;
+    }
+
+    // Euclid's method
+    if (b == 0) {
+      return Math.abs(a);
+    }
+    a = Math.abs(a);
+    b = Math.abs(b);
+    while (b != 0) {
+      double tmp = b;
+      b = a % b;
+      a = tmp;
+    }
+    return a;
+  }
+
+  /**
+   * Returns the greatest common divisor of the elements of double array a.
+   *
+   * @param a array of operands
+   * @return greatest common divisor of the elements of a
+   */
+  @Pure
+  @StaticallyExecutable
+  public static double gcd(double[] a) {
+    if (a.length == 0) {
+      return 0;
+    }
+    double result = a[0];
+    for (int i = 1; i < a.length; i++) {
+      result = gcd(a[i], result);
+      if ((result == 1) || (result == 0)) {
+        return result;
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Returns the gcd (greatest common divisor) of the differences between the elements of double
+   * array a.
+   *
+   * @param a array of operands
+   * @return greatest common divisor of the differences between the elements of a
+   */
+  @Pure
+  @StaticallyExecutable
+  public static double gcdDifferences(double[] a) {
+    if (a.length < 2) {
+      return 0;
+    }
+    double result = a[1] - a[0];
+    for (int i = 2; i < a.length; i++) {
+      result = gcd(a[i] - a[i - 1], result);
+      if ((result == 1) || (result == 0)) {
+        return result;
+      }
+    }
+    return result;
+  }
+
+  //
+  // Modulus
+  //
+
+  /**
+   * Returns z such that {@code (z == x mod y) && (0 <= z < abs(y))}.
+   *
+   * @param x value to be modded
+   * @param y modulus
+   * @return x % y, where the result is constrained to be non-negative
+   */
+  @SuppressWarnings({
+    "lessthan:return",
+    "lowerbound:return",
+    "index:return"
+  }) // result is non-negative because either y is positive (-> x % y is non-negative)
+  // or |y| is added to x % y, which is also non-negative
+  @Pure
+  @StaticallyExecutable
+  public static @NonNegative @LessThan("#2") @PolyUpperBound int modNonnegative(
+      int x, @PolyUpperBound int y) {
+    int result = x % y;
+    if (result < 0) {
+      result += Math.abs(y);
+    }
+    return result;
+  }
+
+  /**
+   * Returns an array of two integers (r,m) such that each number in NUMS is equal to r (mod m). The
+   * largest possible modulus is used, and the trivial constraint that all integers are equal to 0
+   * mod 1 is not returned (null is returned instead). Also, return null if the array is less than 3
+   * elements long.
+   *
+   * @param nums array of operands
+   * @return an array of two integers (r,m) such that each number in NUMS is equal to r (mod m), or
+   *     null if no such exists or the iterator contains fewer than 3 elements
+   */
+  @SuppressWarnings("value:statically.executable.not.pure") // results are .equals() but not ==
+  @SideEffectFree
+  @StaticallyExecutable
+  public static int @Nullable @ArrayLen(2) [] modulus(int[] nums) {
+    if (nums.length < 3) {
+      return null;
+    }
+
+    int modulus = Math.abs(gcdDifferences(nums));
+    if ((modulus == 0) || (modulus == 1)) {
+      return null;
+    }
+
+    int remainder = nums[0] % modulus;
+    if (remainder < 0) {
+      remainder += modulus;
+    }
+
+    return new int[] {remainder, modulus};
+  }
+
+  /**
+   * The iterator produces Integer values. This can be more efficient than modulus(int[]) if the
+   * int[] doesn't already exist, because this does not necessarily examine every value produced by
+   * its iterator.
+   *
+   * @param itor iterator of operands; modified by this method
+   * @return an array of two integers (r,m) such that each number in itor is equal to r (mod m), or
+   *     null if no such exists or the iterator contains fewer than 3 elements
+   * @see #modulus(int[])
+   */
+  public static int @Nullable @ArrayLen(2) [] modulusInt(Iterator<Integer> itor) {
+    if (!itor.hasNext()) {
+      return null;
+    }
+    int avalue = itor.next();
+    if (!itor.hasNext()) {
+      return null;
+    }
+    int modulus = Math.abs(avalue - itor.next());
+    if (modulus == 1) {
+      return null;
+    }
+    int count = 2;
+    while (itor.hasNext()) {
+      int i = itor.next();
+      if (i == avalue) {
+        continue;
+      }
+      modulus = gcd(modulus, Math.abs(avalue - i));
+      count++;
+      if (modulus == 1) {
+        return null;
+      }
+    }
+    if (count < 3) {
+      return null;
+    }
+    return new int[] {modNonnegative(avalue, modulus), modulus};
+  }
+
+  /**
+   * Returns an array of two integers (r,m) such that each number in NUMS is equal to r (mod m). The
+   * largest possible modulus is used, and the trivial constraint that all integers are equal to 0
+   * mod 1 is not returned (null is returned instead).
+   *
+   * <p>This "Strict" version requires its input to be sorted, in either increasing or decreasing
+   * order, and no element may be missing. The returned modulus is positive either way.
+   *
+   * <p>This "Strict" version differs from the regular modulus by requiring that the argument be
+   * dense: that is, every pair of numbers in the argument array is separated by exactly the
+   * modulus.
+   *
+   * <p>The endpoints can be treated in two different ways: Either exactly like other numbers in the
+   * input, or they can merely be checked for the condition without the strict density requirement.
+   *
+   * @param nums array of operands
+   * @param nonstrictEnds true if endpoints are NOT subject to the strict density requirement
+   * @return an array of two integers (r,m), where m is positive, such that each number in NUMS is
+   *     equal to r (mod m); or null if no such exists or the array contains fewer than 3 elements
+   */
+  @SuppressWarnings({
+    "value:statically.executable.not.pure", // results are .equals() but not ==
+    "allcheckers:purity.call", // side effect to local state (fresh iterator)
+    "lock:method.guarantee.violated", // side effect to local state (fresh iterator)
+  })
+  @SideEffectFree
+  @StaticallyExecutable
+  public static int @Nullable @ArrayLen(2) [] modulusStrict(int[] nums, boolean nonstrictEnds) {
+    if (nums.length < 3) {
+      return null;
+    }
+
+    int firstIndex = 0;
+    int lastIndex = nums.length - 1;
+    int firstNonstrict = 0; // arbitrary initial value
+    int lastNonstrict = 0; // arbitrary initial value
+    if (nonstrictEnds) {
+      firstNonstrict = nums[firstIndex];
+      firstIndex++;
+      lastNonstrict = nums[lastIndex];
+      lastIndex--;
+    }
+    if (lastIndex - firstIndex < 2) {
+      // Fewer than 3 elements are subject to the strict density requirement, so that requirement
+      // is vacuous.  Delegate to `modulusStrictInt`, which handles this case, so that the array
+      // and iterator implementations cannot diverge.  (This branch is unreachable when
+      // `nonstrictEnds` is false, because then `lastIndex - firstIndex` is `nums.length - 1`.)
+      if (nonstrictEnds) {
+        return modulusStrictInt(Arrays.stream(nums).boxed().iterator(), true);
+      }
+      return null;
+    }
+
+    int modulus = nums[firstIndex + 1] - nums[firstIndex];
+    // A modulus of 0 would cause a division by zero.  A modulus of 1 or -1 is the trivial
+    // constraint that every integer is 0 mod 1, which this method does not report.
+    // Integer.MIN_VALUE has no positive counterpart, so `Math.abs` below could not make it
+    // positive.
+    if (modulus == 0 || modulus == 1 || modulus == -1 || modulus == Integer.MIN_VALUE) {
+      return null;
+    }
+    for (int i = firstIndex + 2; i <= lastIndex; i++) {
+      if (nums[i] - nums[i - 1] != modulus) {
+        return null;
+      }
+    }
+
+    // Report a positive modulus, as `modulus(int[])` does.  Congruence modulo m and modulo -m are
+    // the same relation, so this does not change which inputs are accepted, nor the value of r.
+    modulus = Math.abs(modulus);
+
+    int r = modNonnegative(nums[firstIndex], modulus);
+    if (nonstrictEnds) {
+      if ((r != modNonnegative(firstNonstrict, modulus))
+          || (r != modNonnegative(lastNonstrict, modulus))) {
+        return null;
+      }
+    }
+
+    return new int[] {r, modulus};
+  }
+
+  /**
+   * The iterator produces Integer values. This can be more efficient than modulus(int[]) if the
+   * int[] doesn't already exist, because this does not necessarily examine every value produced by
+   * its iterator.
+   *
+   * <p>For documentation, see {@link #modulusStrict(int[], boolean)}.
+   *
+   * @param itor iterator of operands; modified by this method
+   * @param nonstrictEnds true if endpoints are NOT subject to the strict density requirement
+   * @return an array of two integers (r,m), where m is positive, such that each number in NUMS is
+   *     equal to r (mod m); or null if no such exists or the iterator contains fewer than 3
+   *     elements
+   * @see #modulusStrict(int[], boolean)
+   */
+  public static int @Nullable @ArrayLen(2) [] modulusStrictInt(
+      Iterator<Integer> itor, boolean nonstrictEnds) {
+    if (!itor.hasNext()) {
+      return null;
+    }
+
+    int firstNonstrict = 0; // arbitrary initial value
+    int lastNonstrict = 0; // arbitrary initial value
+    if (nonstrictEnds) {
+      firstNonstrict = itor.next();
+      if (!itor.hasNext()) {
+        return null;
+      }
+    }
+
+    int prev = itor.next();
+    if (!itor.hasNext()) {
+      return null;
+    }
+    int next = itor.next();
+    int modulus = next - prev;
+    int count = 2;
+    while (itor.hasNext()) {
+      prev = next;
+      next = itor.next();
+      if (nonstrictEnds && !itor.hasNext()) {
+        lastNonstrict = next;
+        break;
+      }
+
+      if (next - prev != modulus) {
+        return null;
+      }
+      count++;
+    }
+    if (count < 3) {
+      // Fewer than 3 elements are subject to the strict density requirement, so fall back to the
+      // non-strict computation over the 4 elements that were seen.  (`count` is at least 2, because
+      // it is initialized to 2 and is only incremented.)  This mirrors `modulusStrictLong`.
+      //
+      // `prev - modulus` reconstructs the element before `prev`.  When the input has 4 elements,
+      // that is the genuine second element.  When the input has only 3 elements, the loop above
+      // never ran, so `prev - modulus` is a value that does not appear in the input.  That is
+      // harmless: its difference from each other element is an integer combination of differences
+      // that are already present, so it does not change the gcd that `modulusInt` computes, and
+      // hence changes neither the returned modulus nor the returned remainder.
+      if (nonstrictEnds) {
+        int[] result =
+            modulusInt(
+                Arrays.stream(new Integer[] {firstNonstrict, prev - modulus, prev, next})
+                    .iterator());
+        // `modulusInt` can return a non-positive modulus when a difference overflows.  This
+        // method promises a positive modulus, so report failure rather than a bogus answer.
+        if (result != null && result[1] <= 0) {
+          return null;
+        }
+        return result;
+      }
+      return null;
+    }
+
+    // A modulus of 0 would cause a division by zero.  A modulus of 1 or -1 is the trivial
+    // constraint that every integer is 0 mod 1, which this method does not report.
+    // Integer.MIN_VALUE has no positive counterpart, so `Math.abs` below could not make it
+    // positive.  This test comes after the `count < 3` fallback, which never uses `modulus` as a
+    // divisor: when the strict density requirement is vacuous, an inferred step of 0, 1, or -1
+    // must not veto the non-strict computation, which may still find a modulus.  For example,
+    // {3, 7, 7, 11} with nonstrict ends infers a step of 0 from the two strict elements, but the
+    // non-strict computation over all four elements yields (3, 4).
+    if (modulus == 0 || modulus == 1 || modulus == -1 || modulus == Integer.MIN_VALUE) {
+      return null;
+    }
+
+    // Report a positive modulus, as `modulus(int[])` does.  Congruence modulo m and modulo -m are
+    // the same relation, so this does not change which inputs are accepted, nor the value of r.
+    modulus = Math.abs(modulus);
+
+    // Use `prev`, a strict element: when `nonstrictEnds`, the loop broke with `next` holding the
+    // (nonstrict) last endpoint, which is the element to check, not the one that defines r.
+    int r = modNonnegative(prev, modulus);
+    if (nonstrictEnds) {
+      if ((r != modNonnegative(firstNonstrict, modulus))
+          || (r != modNonnegative(lastNonstrict, modulus))) {
+        return null;
+      }
+    }
+
+    return new int[] {r, modulus};
+  }
+
+  // modulus for long (as opposed to int) values
+
+  /**
+   * Returns z such that {@code (z == x mod y) && (0 <= z < abs(y))}.
+   *
+   * @param x value to be modded
+   * @param y modulus
+   * @return x % y, where the result is constrained to be non-negative
+   */
+  @SuppressWarnings({
+    "lessthan:return",
+    "lowerbound:return",
+    "index:return"
+  }) // result is non-negative because either y is positive (-> x % y is non-negative) or
+  // |y| is added to x % y, which is also non-negative
+  @Pure
+  @StaticallyExecutable
+  public static @NonNegative @LessThan("#2") @PolyUpperBound long modNonnegative(
+      long x, @PolyUpperBound long y) {
+    long result = x % y;
+    if (result < 0) {
+      result += Math.abs(y);
+    }
+    return result;
+  }
+
+  /**
+   * Returns an array of two integers (r,m) such that each number in NUMS is equal to r (mod m). The
+   * largest possible modulus is used, and the trivial constraint that all integers are equal to 0
+   * mod 1 is not returned (null is returned instead). Also, return null if the array is less than 3
+   * elements long.
+   *
+   * @param nums array of operands
+   * @return an array of two integers (r,m) such that each number in NUMS is equal to r (mod m), or
+   *     null if no such exists or the iterator contains fewer than 3 elements
+   */
+  @SuppressWarnings("value:statically.executable.not.pure") // results are .equals() but not ==
+  @SideEffectFree
+  @StaticallyExecutable
+  public static long @Nullable @ArrayLen(2) [] modulus(long[] nums) {
+    if (nums.length < 3) {
+      return null;
+    }
+
+    long modulus = Math.abs(gcdDifferences(nums));
+    if ((modulus == 0) || (modulus == 1)) {
+      return null;
+    }
+
+    long remainder = nums[0] % modulus;
+    if (remainder < 0) {
+      remainder += modulus;
+    }
+
+    return new long[] {remainder, modulus};
+  }
+
+  /**
+   * The iterator produces Long values. This can be more efficient than modulus(long[]) if the
+   * long[] doesn't already exist, because this does not necessarily examine every value produced by
+   * its iterator.
+   *
+   * @param itor iterator of operands; modified by this method
+   * @return an array of two integers (r,m) such that each number in itor is equal to r (mod m), or
+   *     null if no such exists or the iterator contains fewer than 3 elements
+   * @see #modulus(long[])
+   */
+  public static long @Nullable @ArrayLen(2) [] modulusLong(Iterator<Long> itor) {
+    if (!itor.hasNext()) {
+      return null;
+    }
+    long avalue = itor.next();
+    if (!itor.hasNext()) {
+      return null;
+    }
+    long modulus = Math.abs(avalue - itor.next());
+    if (modulus == 1) {
+      return null;
+    }
+    int count = 2;
+    while (itor.hasNext()) {
+      long i = itor.next();
+      if (i == avalue) {
+        continue;
+      }
+      modulus = gcd(modulus, Math.abs(avalue - i));
+      count++;
+      if (modulus == 1) {
+        return null;
+      }
+    }
+    if (count < 3) {
+      return null;
+    }
+    return new long[] {modNonnegative(avalue, modulus), modulus};
+  }
+
+  /**
+   * Returns an array of two integers (r,m) such that each number in NUMS is equal to r (mod m). The
+   * largest possible modulus is used, and the trivial constraint that all integers are equal to 0
+   * mod 1 is not returned (null is returned instead).
+   *
+   * <p>This "Strict" version requires its input to be sorted, in either increasing or decreasing
+   * order, and no element may be missing. The returned modulus is positive either way.
+   *
+   * <p>This "Strict" version differs from the regular modulus by requiring that the argument be
+   * dense: that is, every pair of numbers in the argument array is separated by exactly the
+   * modulus.
+   *
+   * <p>The endpoints can be treated in two different ways: Either exactly like other numbers in the
+   * input, or they can merely be checked for the condition without the strict density requirement.
+   *
+   * @param nums array of operands
+   * @param nonstrictEnds true if endpoints are NOT subject to the strict density requirement
+   * @return an array of two integers (r,m), where m is positive, such that each number in NUMS is
+   *     equal to r (mod m); or null if no such exists or the array contains fewer than 3 elements
+   */
+  @SuppressWarnings({
+    "value:statically.executable.not.pure", // results are .equals() but not ==
+    "allcheckers:purity.call", // side effect to local state (fresh iterator)
+    "lock:method.guarantee.violated", // side effect to local state (fresh iterator)
+  })
+  @SideEffectFree
+  @StaticallyExecutable
+  public static long @Nullable @ArrayLen(2) [] modulusStrict(long[] nums, boolean nonstrictEnds) {
+    if (nums.length < 3) {
+      return null;
+    }
+
+    int firstIndex = 0;
+    int lastIndex = nums.length - 1;
+    long firstNonstrict = 0; // arbitrary initial value
+    long lastNonstrict = 0; // arbitrary initial value
+    if (nonstrictEnds) {
+      firstNonstrict = nums[firstIndex];
+      firstIndex++;
+      lastNonstrict = nums[lastIndex];
+      lastIndex--;
+    }
+    if (lastIndex - firstIndex < 2) {
+      // Fewer than 3 elements are subject to the strict density requirement, so that requirement
+      // is vacuous.  Delegate to `modulusStrictLong`, which handles this case, so that the array
+      // and iterator implementations cannot diverge.  (This branch is unreachable when
+      // `nonstrictEnds` is false, because then `lastIndex - firstIndex` is `nums.length - 1`.)
+      if (nonstrictEnds) {
+        return modulusStrictLong(Arrays.stream(nums).boxed().iterator(), true);
+      }
+      return null;
+    }
+
+    long modulus = nums[firstIndex + 1] - nums[firstIndex];
+    // A modulus of 0 would cause a division by zero.  A modulus of 1 or -1 is the trivial
+    // constraint that every integer is 0 mod 1, which this method does not report.
+    // Long.MIN_VALUE has no positive counterpart, so `Math.abs` below could not make it positive.
+    if (modulus == 0 || modulus == 1 || modulus == -1 || modulus == Long.MIN_VALUE) {
+      return null;
+    }
+    for (int i = firstIndex + 2; i <= lastIndex; i++) {
+      if (nums[i] - nums[i - 1] != modulus) {
+        return null;
+      }
+    }
+
+    // Report a positive modulus, as `modulus(long[])` does.  Congruence modulo m and modulo -m are
+    // the same relation, so this does not change which inputs are accepted, nor the value of r.
+    modulus = Math.abs(modulus);
+
+    long r = modNonnegative(nums[firstIndex], modulus);
+    if (nonstrictEnds) {
+      if ((r != modNonnegative(firstNonstrict, modulus))
+          || (r != modNonnegative(lastNonstrict, modulus))) {
+        return null;
+      }
+    }
+
+    return new long[] {r, modulus};
+  }
+
+  /**
+   * The iterator produces Long values. This can be more efficient than modulus(long[]) if the
+   * long[] doesn't already exist, because this does not necessarily examine every value produced by
+   * its iterator.
+   *
+   * <p>For documentation, see {@link #modulusStrict(long[], boolean)}.
+   *
+   * @param itor iterator of operands; modified by this method
+   * @param nonstrictEnds true if endpoints are NOT subject to the strict density requirement
+   * @return an array of two integers (r,m), where m is positive, such that each number in NUMS is
+   *     equal to r (mod m); or null if no such exists or the iterator contains fewer than 3
+   *     elements
+   * @see #modulusStrict(long[], boolean)
+   */
+  public static long @Nullable @ArrayLen(2) [] modulusStrictLong(
+      Iterator<Long> itor, boolean nonstrictEnds) {
+    if (!itor.hasNext()) {
+      return null;
+    }
+
+    long firstNonstrict = 0; // arbitrary initial value
+    long lastNonstrict = 0; // arbitrary initial value
+    if (nonstrictEnds) {
+      firstNonstrict = itor.next();
+      if (!itor.hasNext()) {
+        return null;
+      }
+    }
+
+    long prev = itor.next();
+    if (!itor.hasNext()) {
+      return null;
+    }
+    long next = itor.next();
+    long modulus = next - prev;
+    int count = 2;
+    while (itor.hasNext()) {
+      prev = next;
+      next = itor.next();
+      if (nonstrictEnds && !itor.hasNext()) {
+        lastNonstrict = next;
+        break;
+      }
+
+      if (next - prev != modulus) {
+        return null;
+      }
+      count++;
+    }
+    if (count < 3) {
+      // Fewer than 3 elements are subject to the strict density requirement, so fall back to the
+      // non-strict computation over the 4 elements that were seen.  (`count` is at least 2, because
+      // it is initialized to 2 and is only incremented.)  This mirrors `modulusStrictInt`.
+      //
+      // `prev - modulus` reconstructs the element before `prev`.  When the input has 4 elements,
+      // that is the genuine second element.  When the input has only 3 elements, the loop above
+      // never ran, so `prev - modulus` is a value that does not appear in the input.  That is
+      // harmless: its difference from each other element is an integer combination of differences
+      // that are already present, so it does not change the gcd that `modulusLong` computes, and
+      // hence changes neither the returned modulus nor the returned remainder.
+      if (nonstrictEnds) {
+        long[] result =
+            modulusLong(
+                Arrays.stream(new Long[] {firstNonstrict, prev - modulus, prev, next}).iterator());
+        // `modulusLong` can return a non-positive modulus when a difference overflows.  This
+        // method promises a positive modulus, so report failure rather than a bogus answer.
+        if (result != null && result[1] <= 0) {
+          return null;
+        }
+        return result;
+      }
+      return null;
+    }
+
+    // A modulus of 0 would cause a division by zero.  A modulus of 1 or -1 is the trivial
+    // constraint that every integer is 0 mod 1, which this method does not report.
+    // Long.MIN_VALUE has no positive counterpart, so `Math.abs` below could not make it positive.
+    // This test comes after the `count < 3` fallback, which never uses `modulus` as a divisor:
+    // when the strict density requirement is vacuous, an inferred step of 0, 1, or -1 must not
+    // veto the non-strict computation, which may still find a modulus.  For example,
+    // {3, 7, 7, 11} with nonstrict ends infers a step of 0 from the two strict elements, but the
+    // non-strict computation over all four elements yields (3, 4).
+    if (modulus == 0 || modulus == 1 || modulus == -1 || modulus == Long.MIN_VALUE) {
+      return null;
+    }
+
+    // Report a positive modulus, as `modulus(long[])` does.  Congruence modulo m and modulo -m are
+    // the same relation, so this does not change which inputs are accepted, nor the value of r.
+    modulus = Math.abs(modulus);
+
+    // Use `prev`, a strict element: when `nonstrictEnds`, the loop broke with `next` holding the
+    // (nonstrict) last endpoint, which is the element to check, not the one that defines r.
+    long r = modNonnegative(prev, modulus);
+    if (nonstrictEnds) {
+      if ((r != modNonnegative(firstNonstrict, modulus))
+          || (r != modNonnegative(lastNonstrict, modulus))) {
+        return null;
+      }
+    }
+
+    return new long[] {r, modulus};
+  }
+
+  //
+  // Non-Modulus
+  //
+
+  /**
+   * Returns an array containing all the numbers <b>not</b> in its argument array (which must be
+   * non-empty) but in the argument's range; that is, bigger than its argument's minimum value and
+   * smaller than its argument's maximum value. The result contains no duplicates and is in order.
+   *
+   * @param nums numbers to be excluded; length &gt; 0; may contain duplicates
+   * @return the set: [min(nums)..max(nums)] - nums
+   */
+  @SuppressWarnings({"allcheckers:purity", "lock"})
+  @Pure
+  @StaticallyExecutable
+  public static int[] missingNumbers(int @MinLen(1) [] nums) {
+    // avoid modifying parameter
+    nums = nums.clone();
+    Arrays.sort(nums);
+    int min = nums[0];
+    int max = nums[nums.length - 1];
+    int sizeEstimate = max - min + 1 - nums.length;
+    List<Integer> resultList = new ArrayList<>(sizeEstimate < 1 ? 1 : sizeEstimate);
+    int val = min;
+    for (int elt : nums) {
+      while (val < elt) {
+        resultList.add(val);
+        val++;
+      }
+      if (val == elt) {
+        val++;
+      }
+    }
+    int[] resultArray = new int[resultList.size()];
+    for (int i = 0; i < resultArray.length; i++) {
+      resultArray[i] = resultList.get(i);
+    }
+    return resultArray;
+  }
+
+  /**
+   * This iterator returns all the numbers *not* in its argument array (which must be non-empty) but
+   * in the argument's range; that is, bigger than its argument's minimum value and smaller than its
+   * argument's maximum value. The result contains no duplicates and is in order. If boolean addEnds
+   * is set, then the bracketing endpoints are also returned; otherwise, all returned values are
+   * between the minimum and maximum of the original values.
+   */
+  /*package*/ static final class MissingNumbersIteratorInt implements Iterator<Integer> {
+    // Exactly one of nums and numsItor is non-null.
+    /** The numbers not to include in the iterator. */
+    private int @MonotonicNonNull @MinLen(1) [] nums;
+
+    /** The numbers not to include in the iterator. */
+    private @MonotonicNonNull Iterator<Integer> numsItor;
+
+    /** The current element of the numbers not to include in the iterator. */
+    private int currentNonmissing;
+
+    /** The next element to be returned by the iterator. */
+    private int currentMissing;
+
+    /** Used only if nums != null, in which case it is an index into nums. */
+    private @IndexFor("nums") int currentIndex;
+
+    /**
+     * If true, include the value just before the minimum excluded element and the value just after
+     * the maximum excluded element.
+     */
+    private final boolean addEnds;
+
+    /**
+     * An iterator over all the numbers <b>not</b> in the argument array, but within its range.
+     *
+     * @param nums a non-empty array
+     * @param addEnds if true, include the bracketing endpoints
+     */
+    private @Unshrinkable MissingNumbersIteratorInt(int @MinLen(1) [] nums, boolean addEnds) {
+      this.addEnds = addEnds;
+      { // avoid modifying parameter
+        int[] numsCopy = new int[nums.length];
+        System.arraycopy(nums, 0, numsCopy, 0, nums.length);
+        nums = numsCopy;
+      }
+      Arrays.sort(nums);
+      this.nums = nums;
+      currentIndex = 0;
+      currentNonmissing = nums[currentIndex];
+      if (addEnds) {
+        currentMissing = currentNonmissing - 1;
+      } else {
+        currentMissing = currentNonmissing;
+      }
+    }
+
+    /**
+     * An iterator over all the numbers <b>not</b> in the argument iterator, but within its range.
+     *
+     * @param numsItor a non-empty iterator; it must return integers in sorted order
+     * @param addEnds if true, include the bracketing endpoints
+     */
+    /*package*/ @Unshrinkable MissingNumbersIteratorInt(Iterator<Integer> numsItor, boolean addEnds) {
+      this.addEnds = addEnds;
+      if (!numsItor.hasNext()) {
+        throw new Error("No elements in numsItor");
+      }
+      currentNonmissing = numsItor.next();
+      if (addEnds) {
+        currentMissing = currentNonmissing - 1;
+      } else {
+        currentMissing = currentNonmissing;
+      }
+      this.numsItor = numsItor;
+      @IndexFor("nums") int unused = Integer.MIN_VALUE;
+      currentIndex = unused;
+    }
+
+    @SuppressWarnings({
+      "allcheckers:purity", // benevolent side effects
+      "lock:method.guarantee.violated"
+    })
+    @Override
+    public boolean hasNext(@GuardSatisfied MissingNumbersIteratorInt this) {
+      if (currentMissing < currentNonmissing) {
+        return true;
+      }
+      // This loop ("while" instead of "if") permits duplicates in nums.
+      while (currentMissing == currentNonmissing) {
+        if (nums != null) {
+          @SuppressWarnings(
+              "index:assignment" // This breaks the invariant, but it's checked right below and the
+          // function exits.
+          )
+          @IndexFor("nums") int currentIndexTmp = currentIndex + 1;
+          currentIndex = currentIndexTmp;
+          if (currentIndex >= nums.length) {
+            if (addEnds) {
+              currentMissing++;
+              return true;
+            } else {
+              return false;
+            }
+          }
+          currentNonmissing = nums[currentIndex];
+        } else if (numsItor != null) {
+          if (!numsItor.hasNext()) {
+            if (addEnds) {
+              currentMissing++;
+              return true;
+            } else {
+              return false;
+            }
+          }
+          // prevNonmissing is for testing only
+          int prevNonmissing = currentNonmissing;
+          currentNonmissing = numsItor.next();
+          if (prevNonmissing >= currentNonmissing) {
+            throw new Error(
+                "Non-sorted Iterator supplied to MissingNumbersIteratorInt: prevNonmissing = "
+                    + prevNonmissing
+                    + ", currentNonmissing = "
+                    + currentNonmissing);
+          }
+        } else {
+          throw new Error("Can't happen");
+        }
+        currentMissing++;
+        return hasNext();
+      }
+      if (addEnds) {
+        return (currentMissing == currentNonmissing + 1);
+      } else {
+        throw new Error("Can't happen: " + currentMissing + " " + currentNonmissing);
+      }
+    }
+
+    @Override
+    public Integer next(@GuardSatisfied MissingNumbersIteratorInt this) {
+      if (!hasNext()) {
+        throw new NoSuchElementException();
+      }
+      Integer result = currentMissing;
+      currentMissing++;
+      return result;
+    }
+
+    @Override
+    public void remove(@Shrinkable @GuardSatisfied MissingNumbersIteratorInt this) {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  /**
+   * Returns a tuple of (r,m) where no number in NUMS is equal to r (mod m) but all missing numbers
+   * in their range are. Returns null if the input array has 0 length.
+   *
+   * @param nums the list of operands
+   * @return a (remainder, modulus) pair that fails to match elements of nums
+   */
+  @SuppressWarnings({"allcheckers:purity", "lock"})
+  @Pure
+  @StaticallyExecutable
+  public static int @Nullable @ArrayLen(2) [] nonmodulusStrict(int[] nums) {
+    // This implementation is particularly inefficient; find a better way to
+    // compute this.  Perhaps obtain the new modulus numbers incrementally
+    // instead of all at once.
+    if (nums.length == 0) {
+      return null;
+    }
+    int range = ArraysP.elementRange(nums);
+    if (range > 65_536) {
+      return null;
+    }
+    return nonmodulusStrictIntInternal(new MissingNumbersIteratorInt(nums, true));
+  }
+
+  /**
+   * Helper for {@link #nonmodulusStrict(int[])}.
+   *
+   * @param missing the missing integers; modified by this method
+   * @return value to be returned by {@link #nonmodulusStrict(int[])}: a tuple of (r,m) where all
+   *     numbers in {@code missing} are equal to r (mod m)
+   */
+  @SuppressWarnings("deprecation") // to be made package-private
+  private static int @Nullable @ArrayLen(2) [] nonmodulusStrictIntInternal(
+      Iterator<Integer> missing) {
+    // Must not use regular modulus:  that can produce errors, eg
+    // nonmodulusStrict({1,2,3,5,6,7,9,11}) => {0,2}.  Thus, use
+    // modulusStrict.
+    CollectionsP.RemoveFirstAndLastIterator<Integer> missingNums =
+        new CollectionsP.RemoveFirstAndLastIterator<>(missing);
+    int[] result = modulusStrictInt(missingNums, false);
+    if (result == null) {
+      return result;
+    }
+    if (!checkFirstAndLastNonmodulus(result, missingNums)) {
+      return null;
+    }
+
+    return result;
+  }
+
+  /**
+   * Returns true if the first and last elements are not equal to r (mod m).
+   *
+   * @param rm a tuple of (r,m)
+   * @param rfali a sequence of numbers, plus a first and last element outside their range. This
+   *     iterator has already been iterated all the way to its end.
+   * @return true if the first and last elements are not equal to r (mod m)
+   */
+  @SuppressWarnings("deprecation") // to be made package-private
+  private static boolean checkFirstAndLastNonmodulus(
+      int @ArrayLen(2) [] rm, CollectionsP.RemoveFirstAndLastIterator<Integer> rfali) {
+    int r = rm[0];
+    int m = rm[1];
+    int first = rfali.getFirst();
+    int last = rfali.getLast();
+    return ((r != modNonnegative(first, m)) && (r != modNonnegative(last, m)));
+  }
+
+  /**
+   * Returns a tuple of (r,m) where no number in NUMS is equal to r (mod m) but all missing numbers
+   * in their range are.
+   *
+   * @param nums the list of operands
+   * @return a (remainder, modulus) pair that fails to match elements of nums
+   */
+  public static int @Nullable @ArrayLen(2) [] nonmodulusStrictInt(Iterator<Integer> nums) {
+    return nonmodulusStrictIntInternal(new MissingNumbersIteratorInt(nums, true));
+  }
+
+  // Old, slightly less efficient implementation that uses the version of
+  // missingNumbers that returns an array instead of an Iterator.
+  // /**
+  //  * Returns a tuple of (r,m) where no number in NUMS is equal to r (mod
+  //  * m) but all missing numbers in their range are.
+  //  */
+  // public static int @Nullable @ArrayLen(2) [] nonmodulusStrict(int[] nums) {
+  //   // This implementation is particularly inefficient; find a better way to
+  //   // compute this.  Perhaps obtain the new modulus numbers incrementally
+  //   // instead of all at once.
+  //   if (nums.length == 0) {
+  //     return null;
+  //   }
+  //   int range = ArraysP.elementRange(nums);
+  //   if (range > 65536) {
+  //     return null;
+  //   }
+  //   return modulus(missingNumbers(nums));
+  // }
+
+  /**
+   * Returns a tuple of (r,m) where no number in NUMS is equal to r (mod m) but for every number in
+   * NUMS, at least one is equal to every non-r remainder. The modulus is chosen as small as
+   * possible, but no greater than half the range of the input numbers (else null is returned).
+   *
+   * @param nums the list of operands
+   * @return a (remainder, modulus) pair that fails to match elements of nums
+   */
+  // This seems to give too many false positives (or maybe my probability
+  // model was wrong); use nonmodulusStrict instead.
+  @SuppressWarnings({
+    "allcheckers:purity",
+    // "PMD.AvoidInstantiatingObjectsInLoops" // can the algorithm avoid this cost?
+  })
+  @Pure
+  @StaticallyExecutable
+  public static int @Nullable @ArrayLen(2) [] nonmodulusNonstrict(int[] nums) {
+    if (nums.length < 4) {
+      return null;
+    }
+    int maxModulus = Math.min(nums.length / 2, ArraysP.elementRange(nums) / 2);
+
+    // System.out.println("nums.length=" + nums.length + ", range=" +
+    // ArraysP.elementRange(nums) + ", maxModulus=" + maxModulus);
+
+    // no real sense checking 2, as commonModulus would have found it, but
+    // include it to make this function stand on its own
+    for (int m = 2; m <= maxModulus; m++) {
+      // System.out.println("Trying m=" + m);
+      boolean[] hasModulus = new boolean[m]; // initialized to false
+      int numNonmodulus = m;
+      for (int elt : nums) {
+        @IndexFor("hasModulus") int rem = modNonnegative(elt, m);
+        if (!hasModulus[rem]) {
+          hasModulus[rem] = true;
+          numNonmodulus--;
+          // System.out.println("rem=" + rem + " for " + nums[i] + "; numNonmodulus=" +
+          // numNonmodulus);
+          if (numNonmodulus == 0) {
+            // Quit as soon as we see every remainder instead of processing
+            // each element of the input list.
+            break;
+          }
+        }
+      }
+      // System.out.println("For m=" + m + ", numNonmodulus=" + numNonmodulus);
+      if (numNonmodulus == 1) {
+        return new int[] {ArraysP.indexOf(hasModulus, false), m};
+      }
+    }
+    return null;
+  }
+
+  // non-modulus for long (as opposed to int) values
+
+  /**
+   * Returns an array containing all the numbers <b>not</b> in its argument array (which must be
+   * non-empty) but in the argument's range; that is, bigger than its argument's minimum value and
+   * smaller than its argument's maximum value. The result contains no duplicates and is in order.
+   *
+   * @param nums numbers to be excluded; length &gt; 0; may contain duplicates
+   * @return the set: [min(nums)..max(nums)] - nums
+   */
+  @SuppressWarnings({"allcheckers:purity", "lock"})
+  @Pure
+  @StaticallyExecutable
+  public static long[] missingNumbers(long @MinLen(1) [] nums) {
+    // avoid modifying parameter
+    nums = nums.clone();
+    Arrays.sort(nums);
+    long min = nums[0];
+    long max = nums[nums.length - 1];
+    int sizeEstimate = ((int) (max - min + 1 - nums.length));
+    List<Long> resultList = new ArrayList<>(sizeEstimate < 1 ? 1 : sizeEstimate);
+    long val = min;
+    for (long elt : nums) {
+      while (val < elt) {
+        resultList.add(val);
+        val++;
+      }
+      if (val == elt) {
+        val++;
+      }
+    }
+
+    long[] resultArray = new long[resultList.size()];
+    for (int i = 0; i < resultArray.length; i++) {
+      resultArray[i] = resultList.get(i);
+    }
+    return resultArray;
+  }
+
+  /**
+   * This iterator returns all the numbers *not* in its argument array (which must be non-empty) but
+   * in the argument's range; that is, bigger than its argument's minimum value and smaller than its
+   * argument's maximum value. The result contains no duplicates and is in order. If boolean addEnds
+   * is set, then the bracketing endpoints are also returned; otherwise, all returned values are
+   * between the minimum and maximum of the original values.
+   */
+  private static final class MissingNumbersIteratorLong implements Iterator<Long> {
+    // Exactly one of nums and numsItor is non-null.
+    /** The numbers not to include in the iterator. */
+    private long @MonotonicNonNull @MinLen(1) [] nums;
+
+    /** The numbers not to include in the iterator. */
+    private @MonotonicNonNull Iterator<Long> numsItor;
+
+    /** The current element of the numbers not to include in the iterator. */
+    private long currentNonmissing;
+
+    /** The next element to be returned by the iterator. */
+    private long currentMissing;
+
+    /** Used only if nums != null, in which case it is an index into nums. */
+    private @IndexFor("nums") int currentIndex;
+
+    /**
+     * If true, include the value just before the minimum excluded element and the value just after
+     * the maximum excluded element.
+     */
+    private final boolean addEnds;
+
+    /**
+     * An iterator over all the numbers <b>not</b> in its original argument array, but within its
+     * range.
+     *
+     * @param nums a non-empty array
+     * @param addEnds if true, include the bracketing endpoints
+     */
+    private @Unshrinkable MissingNumbersIteratorLong(long @MinLen(1) [] nums, boolean addEnds) {
+      this.addEnds = addEnds;
+      { // avoid modifying parameter
+        long[] numsCopy = new long[nums.length];
+        System.arraycopy(nums, 0, numsCopy, 0, nums.length);
+        nums = numsCopy;
+      }
+      Arrays.sort(nums);
+      this.nums = nums;
+      currentIndex = 0;
+      currentNonmissing = nums[currentIndex];
+      if (addEnds) {
+        currentMissing = currentNonmissing - 1;
+      } else {
+        currentMissing = currentNonmissing;
+      }
+    }
+
+    /**
+     * An iterator over all the numbers <b>not</b> in its argument iterator, but within its range.
+     *
+     * @param numsItor a non-empty array; must return longs in sorted order
+     * @param addEnds if true, include the bracketing endpoints
+     */
+    private @Unshrinkable MissingNumbersIteratorLong(Iterator<Long> numsItor, boolean addEnds) {
+      this.addEnds = addEnds;
+      if (!numsItor.hasNext()) {
+        throw new Error("No elements in numsItor");
+      }
+      currentNonmissing = numsItor.next();
+      if (addEnds) {
+        currentMissing = currentNonmissing - 1;
+      } else {
+        currentMissing = currentNonmissing;
+      }
+      this.numsItor = numsItor;
+      @IndexFor("nums") int unused = Integer.MIN_VALUE;
+      currentIndex = unused;
+    }
+
+    @SuppressWarnings({
+      "allcheckers:purity", // benevolent side effects
+      "lock:method.guarantee.violated"
+    })
+    @Override
+    public boolean hasNext(@GuardSatisfied MissingNumbersIteratorLong this) {
+      if (currentMissing < currentNonmissing) {
+        return true;
+      }
+      // This loop ("while" instead of "if") permits duplicates in nums.
+      while (currentMissing == currentNonmissing) {
+        if (nums != null) {
+          @SuppressWarnings(
+              "index:assignment" // This breaks the invariant, but it's checked right below and the
+          // function exits.
+          )
+          @IndexFor("nums") int currentIndexTmp = currentIndex + 1;
+          currentIndex = currentIndexTmp;
+          if (currentIndex >= nums.length) {
+            if (addEnds) {
+              currentMissing++;
+              return true;
+            } else {
+              return false;
+            }
+          }
+          currentNonmissing = nums[currentIndex];
+        } else if (numsItor != null) {
+          if (!numsItor.hasNext()) {
+            if (addEnds) {
+              currentMissing++;
+              return true;
+            } else {
+              return false;
+            }
+          }
+          // prevNonmissing is for testing only
+          long prevNonmissing = currentNonmissing;
+          currentNonmissing = numsItor.next();
+          if (prevNonmissing >= currentNonmissing) {
+            throw new Error(
+                "Non-sorted Iterator supplied to MissingNumbersIteratorLong: prevNonmissing = "
+                    + prevNonmissing
+                    + ", currentNonmissing = "
+                    + currentNonmissing);
+          }
+        } else {
+          throw new Error("Can't happen");
+        }
+        currentMissing++;
+        return hasNext();
+      }
+      if (addEnds) {
+        return (currentMissing == currentNonmissing + 1);
+      } else {
+        throw new Error("Can't happen: " + currentMissing + " " + currentNonmissing);
+      }
+    }
+
+    @Override
+    public Long next(@GuardSatisfied MissingNumbersIteratorLong this) {
+      if (!hasNext()) {
+        throw new NoSuchElementException();
+      }
+      Long result = currentMissing;
+      currentMissing++;
+      return result;
+    }
+
+    @Override
+    public void remove(@Shrinkable @GuardSatisfied MissingNumbersIteratorLong this) {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  /**
+   * Returns a tuple of (r,m) where no number in NUMS is equal to r (mod m) but all missing numbers
+   * in their range are. Returns null if the input array has 0 length.
+   *
+   * @param nums the list of operands
+   * @return a (remainder, modulus) pair that fails to match elements of nums
+   */
+  @SuppressWarnings({"allcheckers:purity", "lock"})
+  @Pure
+  @StaticallyExecutable
+  public static long @Nullable @ArrayLen(2) [] nonmodulusStrict(long[] nums) {
+    // This implementation is particularly inefficient; find a better way to
+    // compute this.  Perhaps obtain the new modulus numbers incrementally
+    // instead of all at once.
+    if (nums.length == 0) {
+      return null;
+    }
+    long range = ArraysP.elementRange(nums);
+    if (range > 65_536) {
+      return null;
+    }
+    return nonmodulusStrictLongInternal(new MissingNumbersIteratorLong(nums, true));
+  }
+
+  /**
+   * Helper for {@link #nonmodulusStrict(long[])}.
+   *
+   * @param missing the missing integers; modified by this method
+   * @return value to be returned by {@link #nonmodulusStrict(long[])}
+   */
+  @SuppressWarnings("deprecation") // to be made package-private
+  private static long @Nullable @ArrayLen(2) [] nonmodulusStrictLongInternal(
+      Iterator<Long> missing) {
+    // Must not use regular modulus:  that can produce errors, eg
+    // nonmodulusStrict({1,2,3,5,6,7,9,11}) => {0,2}.  Thus, use
+    // modulusStrict.
+    CollectionsP.RemoveFirstAndLastIterator<Long> missingNums =
+        new CollectionsP.RemoveFirstAndLastIterator<>(missing);
+    long[] result = modulusStrictLong(missingNums, false);
+    if (result == null) {
+      return result;
+    }
+    if (!checkFirstAndLastNonmodulus(result, missingNums)) {
+      return null;
+    }
+
+    return result;
+  }
+
+  /**
+   * Returns true if the first and last elements are not equal to r (mod m).
+   *
+   * @param rm an array containing two elements
+   * @param rfali a sequence of numbers, plus a first and last element outside their range. This
+   *     iterator has already been iterated all the way to its end.
+   * @return true if the first and last elements are not equal to r (mod m)
+   */
+  @SuppressWarnings("deprecation") // to be made package-private
+  @Pure
+  private static boolean checkFirstAndLastNonmodulus(
+      long @ArrayLen(2) [] rm, CollectionsP.RemoveFirstAndLastIterator<Long> rfali) {
+    long r = rm[0];
+    long m = rm[1];
+    long first = rfali.getFirst();
+    long last = rfali.getLast();
+    return ((r != modNonnegative(first, m)) && (r != modNonnegative(last, m)));
+  }
+
+  /**
+   * Returns a tuple of (r,m) where no number in NUMS is equal to r (mod m) but all missing numbers
+   * in their range are.
+   *
+   * @param nums the list of operands
+   * @return a (remainder, modulus) pair that fails to match elements of nums
+   */
+  public static long @Nullable @ArrayLen(2) [] nonmodulusStrictLong(Iterator<Long> nums) {
+    return nonmodulusStrictLongInternal(new MissingNumbersIteratorLong(nums, true));
+  }
+
+  // Old, slightly less efficient implementation that uses the version of
+  // missingNumbers that returns an array instead of an Iterator.
+  // /**
+  //  * Returns a tuple of (r,m) where no number in NUMS is equal to r (mod
+  //  * m) but all missing numbers in their range are.
+  //  */
+  // public static long @Nullable @ArrayLen(2) [] nonmodulusStrict(long[] nums) {
+  //   // This implementation is particularly inefficient; find a better way to
+  //   // compute this.  Perhaps obtain the new modulus numbers incrementally
+  //   // instead of all at once.
+  //   if (nums.length == 0) {
+  //     return null;
+  //   }
+  //   long range = ArraysP.elementRange(nums);
+  //   if (range > 65536) {
+  //     return null;
+  //   }
+  //   return modulus(missingNumbers(nums));
+  // }
+
+  /**
+   * Returns a tuple of (r,m) where no number in NUMS is equal to r (mod m) but for every number in
+   * NUMS, at least one is equal to every non-r remainder. The modulus is chosen as small as
+   * possible, but no greater than half the range of the input numbers (else null is returned).
+   *
+   * @param nums the list of operands
+   * @return a (remainder, modulus) pair that fails to match elements of nums
+   */
+  // This seems to give too many false positives (or maybe my probability
+  // model was wrong); use nonmodulusStrict instead.
+  @SuppressWarnings("allcheckers:purity")
+  @Pure
+  @StaticallyExecutable
+  public static long @Nullable @ArrayLen(2) [] nonmodulusNonstrict(long[] nums) {
+    if (nums.length < 4) {
+      return null;
+    }
+    int maxModulus = (int) Math.min(nums.length / 2, ArraysP.elementRange(nums) / 2);
+
+    // System.out.println("nums.length=" + nums.length + ", range=" +
+    // ArraysP.elementRange(nums) + ", maxModulus=" + maxModulus);
+
+    // no real sense checking 2, as commonModulus would have found it, but
+    // include it to make this function stand on its own
+    for (int m = 2; m <= maxModulus; m++) {
+      // System.out.println("Trying m=" + m);
+      boolean[] hasModulus = new boolean[m]; // initialized to false
+      int numNonmodulus = m;
+      for (long elt : nums) {
+        @IndexFor("hasModulus") int rem = (int) modNonnegative(elt, m);
+        if (!hasModulus[rem]) {
+          hasModulus[rem] = true;
+          numNonmodulus--;
+          // System.out.println("rem=" + rem + " for " + nums[i] + "; numNonmodulus=" +
+          // numNonmodulus);
+          if (numNonmodulus == 0) {
+            // Quit as soon as we see every remainder instead of processing
+            // each element of the input list.
+            break;
+          }
+        }
+      }
+      // System.out.println("For m=" + m + ", numNonmodulus=" + numNonmodulus);
+      if (numNonmodulus == 1) {
+        return new long[] {ArraysP.indexOf(hasModulus, false), m};
+      }
+    }
+    return null;
+  }
+}

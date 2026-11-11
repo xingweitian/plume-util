@@ -2,6 +2,7 @@ package org.plumelib.util;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * This is a deterministic version of the {@link Object} class. To remove one source of
@@ -20,10 +21,10 @@ import org.checkerframework.checker.lock.qual.GuardSatisfied;
 public class DeterministicObject {
 
   /** The number of objects created so far. */
-  static final AtomicInteger counter = new AtomicInteger(0);
+  private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
   /** The unique ID for this object. */
-  final int uid = counter.getAndIncrement();
+  private final int uid = COUNTER.getAndIncrement();
 
   /** Create a DeterministicObject. */
   public DeterministicObject() {}
@@ -37,5 +38,18 @@ public class DeterministicObject {
   @Override
   public int hashCode(@GuardSatisfied DeterministicObject this) {
     return uid;
+  }
+
+  /**
+   * Returns true if this object is the same instance as the given object. Two distinct {@code
+   * DeterministicObject} objects are never equal.
+   *
+   * @param other a value to compare to this
+   * @return true if this is the same as the given object
+   */
+  @Override
+  public boolean equals(
+      @GuardSatisfied DeterministicObject this, @Nullable @GuardSatisfied Object other) {
+    return this == other;
   }
 }

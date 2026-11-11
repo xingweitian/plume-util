@@ -2,9 +2,15 @@ package org.plumelib.util;
 
 import java.util.HashSet;
 import java.util.Set;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
 
 /** Records all the immutable types in the JDK, and can be queried. */
-public class ImmutableTypes {
+public final class ImmutableTypes {
+
+  /** Do not instantiate. */
+  private ImmutableTypes() {
+    throw new UnsupportedOperationException("Do not instantiate");
+  }
 
   /**
    * The names of the immutable types. This is public so that clients can extend it with bug fixes
@@ -15,7 +21,8 @@ public class ImmutableTypes {
    */
   // It might be more efficient to use Class objects rather than Strings, but that would require
   // everything in the list to be loaded into the JDK at run time.
-  public static Set<String> immutableTypeNames = new HashSet<>();
+  // @SuppressWarnings("PMD.MutableStaticState") // clients are intended to mutate it
+  public static @Modifiable Set<String> immutableTypeNames = new HashSet<>();
 
   // The set contains nothing in package javax.management, which is littered with comments like
   // "Instances of this class are immutable.  Subclasses may be mutable but this is not
@@ -44,9 +51,9 @@ public class ImmutableTypes {
     immutableTypeNames.add("java.awt.Composite");
     immutableTypeNames.add("java.awt.Cursor");
     immutableTypeNames.add("java.awt.Font");
-    immutableTypeNames.add("java.awt.GradientPaint,");
+    immutableTypeNames.add("java.awt.GradientPaint");
     immutableTypeNames.add("java.awt.LinearGradientPaint");
-    immutableTypeNames.add("java.awt.RadialGradientPaint,");
+    immutableTypeNames.add("java.awt.RadialGradientPaint");
     immutableTypeNames.add("java.awt.RenderingHints");
     immutableTypeNames.add("java.awt.font.GlyphMetrics");
     immutableTypeNames.add("java.awt.font.GraphicAttribute");

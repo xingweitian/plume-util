@@ -1,6 +1,9 @@
 package org.plumelib.util;
 
-@SuppressWarnings({
-  "UseCorrectAssertInTests" // `assert` works fine in tests
-})
-public final class MultiRandSelectorTest {}
+/** Test the MultiRandSelector class. */
+final class MultiRandSelectorTest {
+
+  MultiRandSelectorTest() {}
+
+  // TODO
+}

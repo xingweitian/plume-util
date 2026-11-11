@@ -1,6 +1,6 @@
 package org.plumelib.util;
 
-@SuppressWarnings({
-  "UseCorrectAssertInTests" // `assert` works fine in tests
-})
-public final class FileWriterWithNameTest {}
+/** Test the FileWriterWithName class. */
+final class FileWriterWithNameTest {
+  FileWriterWithNameTest() {}
+}

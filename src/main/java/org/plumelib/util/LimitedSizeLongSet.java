@@ -6,6 +6,7 @@ import java.util.List;
 import org.checkerframework.checker.index.qual.IndexFor;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
 import org.checkerframework.checker.index.qual.Positive;
+import org.checkerframework.checker.index.qual.SameLen;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -19,7 +20,7 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
  * estimate (because the internal representation is nulled, in order to save space).
  *
  * <p>The advantage of this class over {@code LimitedSizeSet<Long>} is that it does not autobox the
- * long values, so it takes less memory.
+ * long values, so it takes less memory and possibly less time.
  *
  * @see LimitedSizeSet
  */
@@ -28,45 +29,35 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
 //    * @deprecated use {@link LimitedSizeSet}
 //   @Deprecated
 public class LimitedSizeLongSet implements Serializable, Cloneable {
-  // We are Serializable, so we specify a version to allow changes to
-  // method signatures without breaking serialization.  If you add or
-  // remove fields, you should change this number to the current date.
-  static final long serialVersionUID = 20031021L;
+  /** Unique identifier for serialization. If you add or remove fields, change this number. */
+  private static final long serialVersionUID = 20031021L;
 
+  // The size is not separately stored, because that would take extra space.
   /**
-   * If null, then at least numValues distinct values have been seen. The size is not separately
-   * stored, because that would take extra space.
+   * If null, then at least {@link #numValues} distinct values have been seen (and {@link
+   * #numValues} equals the {@code maxValues} argument to the constructor).
    */
   protected long @Nullable @MinLen(1) [] values;
+
   /** The number of active elements (equivalently, the first unused index). */
-  // Not exactly @IndexOrHigh("values"), because the invariant is broken when
-  // the values field is set to null. Warnings are suppressed when breaking the invariant.
-  @IndexOrHigh("values") int numValues;
-
-  /** Whether assertions are enabled. */
-  private static boolean assertsEnabled = false;
-
-  static {
-    assert assertsEnabled = true; // Intentional side-effect!!!
-    // Now assertsEnabled is set to the correct value
-  }
+  // The Index Checker annotation is not @IndexOrHigh("values"), because the invariant is broken
+  // when the values field is set to null. Warnings are suppressed when breaking the invariant.
+  protected @IndexOrHigh("values") int numValues;
 
   /**
-   * Create a new LimitedSizeLongSet that can hold maxValues values.
+   * Creates a new LimitedSizeLongSet that can hold maxValues values.
    *
    * @param maxValues the maximum number of values this set will be able to hold; must be positive
    */
   public LimitedSizeLongSet(@Positive int maxValues) {
-    if (assertsEnabled && !(maxValues > 0)) {
-      throw new IllegalArgumentException("maxValues should be positive, is " + maxValues);
-    }
+    assert maxValues > 0 : "maxValues should be positive, is " + maxValues;
     // this.maxValues = maxValues;
     values = new long[maxValues];
     numValues = 0;
   }
 
   /**
-   * Add an element to this set.
+   * Adds an element to this set.
    *
    * @param elt the element to add to this set
    */
@@ -87,7 +78,7 @@ public class LimitedSizeLongSet implements Serializable, Cloneable {
   }
 
   /**
-   * Add all elements of {@code s} to this set.
+   * Adds all elements of {@code s} to this set.
    *
    * @param s the elements to add to this set
    */
@@ -114,12 +105,8 @@ public class LimitedSizeLongSet implements Serializable, Cloneable {
     }
     // TODO: s.values isn't modified by the call to add.  Use a local variable until
     // https://tinyurl.com/cfissue/984 is fixed.
-    long[] svalues = s.values;
+    long @SameLen("s.values") [] svalues = s.values;
     for (int i = 0; i < s.size(); i++) {
-      @SuppressWarnings(
-          "index:assignment.type.incompatible" // svalues is the internal rep of s, and s.size() <=
-      // s.values.length
-      )
       @IndexFor("svalues") int index = i;
       add(svalues[index]);
       if (repNulled()) {
@@ -154,8 +141,18 @@ public class LimitedSizeLongSet implements Serializable, Cloneable {
    * @return a number that is a lower bound on the number of elements added to the set
    */
   @Pure
-  public int size(@GuardSatisfied LimitedSizeLongSet this) {
+  public @IndexOrHigh("this.values") int size(@GuardSatisfied LimitedSizeLongSet this) {
     return numValues;
+  }
+
+  /**
+   * Returns true if this is empty.
+   *
+   * @return true if this is empty
+   */
+  @Pure
+  public boolean isEmpty() {
+    return size() == 0;
   }
 
   /**
@@ -200,8 +197,7 @@ public class LimitedSizeLongSet implements Serializable, Cloneable {
     values = null;
   }
 
-  @SuppressWarnings(
-      "allcheckers:purity.not.sideeffectfree.assign.field") // side effect to local state (clone)
+  @SuppressWarnings("allcheckers:purity.assign.field") // side effect to local state (clone)
   @SideEffectFree
   @Override
   public LimitedSizeLongSet clone(@GuardSatisfied LimitedSizeLongSet this) {
@@ -209,7 +205,7 @@ public class LimitedSizeLongSet implements Serializable, Cloneable {
     try {
       result = (LimitedSizeLongSet) super.clone();
     } catch (CloneNotSupportedException e) {
-      throw new Error(); // can't happen
+      throw new Error(e); // can't happen
     }
     if (values != null) {
       result.values = values.clone();
@@ -221,9 +217,9 @@ public class LimitedSizeLongSet implements Serializable, Cloneable {
    * Merges a list of {@code LimitedSizeLongSet} objects into a single object that represents the
    * values seen by the entire list. Returns the new object, whose maxValues is the given integer.
    *
-   * @param maxValues the maximum size for the returned LimitedSizeLongSet
-   * @param slist a list of LimitedSizeLongSet, whose elements will be merged
-   * @return a LimitedSizeLongSet that merges the elements of slist
+   * @param maxValues the maximum size for the returned set
+   * @param slist a list of sets, whose elements will be merged
+   * @return a set that merges the elements of slist
    */
   public static LimitedSizeLongSet merge(@Positive int maxValues, List<LimitedSizeLongSet> slist) {
     LimitedSizeLongSet result = new LimitedSizeLongSet(maxValues);

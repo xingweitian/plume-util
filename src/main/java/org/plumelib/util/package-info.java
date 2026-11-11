@@ -1,19 +1,24 @@
 /**
+ * <h2>Plume-lib Util: Utility libraries for Java</h2>
  *
- *
- * <h3>Plume-lib Util: Utility libraries for Java</h3>
+ * <p>Note that <a
+ * href="http://plumelib.org/hashmap-util/api/org/plumelib/util/package-summary.html#package.description">HashMap
+ * Util</a> defines other classes in the {@code org.plumelib.util} package.
  *
  * <h3 id="Collections_and_iterators">Collections and iterators</h3>
  *
  * <dl>
- *   <dt>{@link org.plumelib.util.ArraysPlume ArraysPlume}
+ *   <dt>{@link org.plumelib.util.ArraysP ArraysP}
  *   <dd>Utilities for manipulating arrays and collections. This complements java.util.Arrays and
  *       java.util.Collections.
- *   <dt>{@link org.plumelib.util.CollectionsPlume CollectionsPlume}
+ *   <dt>{@link org.plumelib.util.CollectionsP CollectionsP}
  *   <dd>Utilities for manipulating collections, iterators, lists, maps, and sets.
  *   <dt>{@link org.plumelib.util.CombinationIterator CombinationIterator}
  *   <dd>Given a set of collections, return all combinations that take one element from each
  *       collection.
+ *   <dt>{@link org.plumelib.util.IdentityBiMap IdentityBiMap}
+ *   <dd>A bidirectional map (a bijection) that compares keys and values by identity. Its inverse
+ *       view maps values to keys.
  *   <dt>{@link org.plumelib.util.LimitedSizeSet LimitedSizeSet}
  *   <dd>Stores up to some maximum number of unique values, at which point its rep is nulled, in
  *       order to save space.
@@ -27,12 +32,27 @@
  *   <dd>Given two sequences/iterators/whatever, OrderedPairIterator returns a new
  *       sequence/iterator/whatever that pairs the matching elements of the inputs, according to
  *       their respective sort orders. (This operation is sometimes called "zipping".)
- *   <dt>{@link org.plumelib.util.WeakHasherMap WeakHasherMap}
- *   <dd>WeakHashMap is a modified version of WeakHashMap from JDK 1.2.2, that adds a constructor
- *       that takes a {@link org.plumelib.util.Hasher Hasher} argument.
- *   <dt>{@link org.plumelib.util.WeakIdentityHashMap WeakIdentityHashMap}
- *   <dd>WeakIdentityHashMap is a modified version of WeakHashMap from JDK 1.5, that uses
- *       System.identityHashCode() rather than the object's hash code.
+ *   <dt>{@link org.plumelib.util.SIList SIList}
+ *   <dd>An immutable list implementation that can share substructure, for time and space
+ *       efficiency. Use this only if you will be creating many lists that share structure. Examples
+ *       are when one list is the concatenation of other lists, or one list is just like another
+ *       with a single element added.
+ *   <dt>{@link org.plumelib.util.UnionFind UnionFind}
+ *   <dd>A union-find (disjoint-set) data structure that partitions elements into disjoint sets,
+ *       with near-constant-time union and find. In addition to the usual operations, it can list
+ *       all the elements of a set and maintain a unary and a binary predicate that are preserved
+ *       across unions.
+ *   <dt>{@link org.plumelib.util.Hasher Hasher}
+ *   <dd>See <a href="http://plumelib.org/hashmap-util/api/org/plumelib/util/Hasher.html">HashMap
+ *       Util</a>.
+ *   <dt>{@code WeakHasherMap}
+ *   <dd>See <a
+ *       href="http://plumelib.org/hashmap-util/api/org/plumelib/util/WeakHasherMap.html">HashMap
+ *       Util</a>.
+ *   <dt>{@code WeakIdentityHashMap}
+ *   <dd>See <a
+ *       href="http://plumelib.org/hashmap-util/api/org/plumelib/util/WeakIdentityHashMap.html">HashMap
+ *       Util</a>.
  * </dl>
  *
  * <h3 id="Text_processing">Text processing</h3>
@@ -40,12 +60,12 @@
  * <dl>
  *   <dt>{@link org.plumelib.util.EntryReader EntryReader}
  *   <dd>Class that reads "entries" from a file. In the simplest case, entries can be lines. It
- *       supports: include files, comments, and multi-line entries (paragraphs). The syntax of each
- *       of these is customizable.
+ *       supports: include files, single-line comments, multi-line comments, multi-line entries
+ *       (paragraphs), and Markdown fenced code blocks. The syntax of each of these is customizable.
  *   <dt>{@link org.plumelib.util.FileIOException FileIOException}
  *   <dd>Extends IOException by also reporting a file name and line number at which the exception
  *       occurred.
- *   <dt>{@link org.plumelib.util.FilesPlume}
+ *   <dt>{@link org.plumelib.util.FilesP}
  *   <dd>Utility methods that create and manipulate files, directories, streams, readers, and
  *       writers.
  *   <dt>{@link org.plumelib.util.FileWriterWithName FileWriterWithName}
@@ -54,10 +74,10 @@
  *   <dt>{@link org.plumelib.util.RegexUtil RegexUtil}
  *   <dd>Utility methods for regular expressions, most notably for testing whether a string is a
  *       regular expression.
- *   <dt>{@link org.plumelib.util.StringsPlume}
+ *   <dt>{@link org.plumelib.util.StringsP}
  *   <dd>Utility methods that manipulate Strings: replacement; prefixing and indentation; splitting
- *       and joining; quoting and escaping; whitespace; comparisons; StringTokenizer; debugging
- *       variants of toString; diagnostic output; miscellaneous.
+ *       and joining; quoting and escaping; whitespace; comparisons; StringTokenizer; version
+ *       numbers; debugging variants of toString; diagnostic output; miscellaneous.
  *       <!--
  *   <dt>{link org.plumelib.util.CountingPrintWriter CountingPrintWriter}
  *   <dd>Prints formatted representations of objects to a text-output stream counting the number of
@@ -72,7 +92,7 @@
  * <h3 id="Math">Math</h3>
  *
  * <dl>
- *   <dt>{@link org.plumelib.util.MathPlume MathPlume}
+ *   <dt>{@link org.plumelib.util.MathP MathP}
  *   <dd>Mathematical utilities.
  *   <dt>{@link org.plumelib.util.FuzzyFloat FuzzyFloat}
  *   <dd>Routines for doing approximate ('fuzzy') floating point comparisons. Those are comparisons
@@ -114,9 +134,6 @@
  * <h3 id="interfaces">Utility interfaces</h3>
  *
  * <dl>
- *   <dt>{@link org.plumelib.util.Filter Filter}
- *   <dd>Interface for things that make boolean decisions. This is inspired by {@code
- *       java.io.FilenameFilter}.
  *   <dt>{@link org.plumelib.util.Partitioner Partitioner}
  *   <dd>A Partitioner accepts Objects and assigns them to an equivalence class.
  * </dl>
@@ -126,26 +143,29 @@
  * <dl>
  *   <dt>{@link org.plumelib.util.DumpHeap DumpHeap}
  *   <dd>Dumps the heap into a {@code .hprof} file.
- *   <dt>{@link org.plumelib.util.SystemPlume SystemPlume}
+ *   <dt>{@link org.plumelib.util.SystemP SystemP}
  *   <dd>Utility methods relating to the JVM runtime system: sleep and garbage collection.
  * </dl>
  *
  * <h3 id="miscellaneous">Miscellaneous</h3>
  *
  * <dl>
- *   <dt>{@link org.plumelib.util.GraphPlume GraphPlume}
+ *   <dt>{@link org.plumelib.util.GraphP GraphP}
  *   <dd>Graph utility methods. This class does not model a graph: all methods are static.
  *   <dt>{@link org.plumelib.util.Intern Intern}
  *   <dd>Utilities for interning objects. Interning is also known as canonicalization or
  *       hash-consing: it returns a single representative object that {@code .equals()} the object,
  *       and the client discards the argument and uses the result instead.
- *   <dt>{@link org.plumelib.util.Pair Pair}
+ *   <dt>{@link org.plumelib.util.IPair IPair}
+ *   <dd>Immutable pair class: type-safely holds two objects of possibly-different types.
+ *   <dt>{@link org.plumelib.util.MPair MPair}
  *   <dd>Mutable pair class: type-safely holds two objects of possibly-different types.
  *   <dt>{@link org.plumelib.util.WeakIdentityPair WeakIdentityPair}
- *   <dd>Immutable pair class: type-safely holds two objects of possibly-different types. Differs
- *       from {@code Pair} in the following ways: is immutable, cannot hold null, holds its elements
- *       with weak pointers, and its equals() method uses object equality to compare its elements.
- *   <dt>{@link org.plumelib.util.UtilPlume UtilPlume}
+ *   <dd>Immutable pair class with weakly-held values. Differs from {@code IPair} in the following
+ *       ways: cannot hold null, holds its elements with weak pointers, clients must use getter
+ *       methods rather than accessing the fields, and its {@code equals()} method uses object
+ *       equality to compare its elements.
+ *   <dt>{@link org.plumelib.util.UtilP UtilP}
  *   <dd>Utility methods that do not belong elsewhere in the plume package: BitSet; File;
  *       directories; file names; reading and writing; hashing; ProcessBuilder; properties; Stream;
  *       Throwable.

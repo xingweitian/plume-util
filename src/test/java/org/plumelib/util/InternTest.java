@@ -1,5 +1,9 @@
 package org.plumelib.util;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
@@ -11,11 +15,19 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.value.qual.ArrayLen;
 import org.junit.jupiter.api.Test;
 
+/** Test the Intern class. */
 @SuppressWarnings({
-  "UseCorrectAssertInTests" // `assert` works fine in tests
+  "PMD.DoNotCallGarbageCollectionExplicitly",
+  "PMD.PrimitiveWrapperInstantiation",
+  "PMD.SimplifiableTestAssertion",
+  "PMD.StringInstantiation",
+  "PMD.UnnecessaryBoxing",
 })
-public final class InternTest {
+final class InternTest {
 
+  InternTest() {}
+
+  @SuppressWarnings("PMD.UnusedAssignment")
   static class InternTestHelper {
     void test(boolean random) {
       int size1 = (random ? 100 : 1);
@@ -34,7 +46,7 @@ public final class InternTest {
           }
         }
         arrays[i] = a;
-        // System.out.println(ArraysPlume.toString(a));
+        // System.out.println(ArraysP.toString(a));
         // Sadly, this is required to get the last array to be
         // garbage-collected with Jikes 1.03 and JDK 1.2.2.
         a = null;
@@ -43,8 +55,8 @@ public final class InternTest {
       if (Intern.numIntArrays() != 0) {
         throw new Error(" expected 0 int arrays at start, found " + Intern.numIntArrays());
       }
-      for (int i = 0; i < arrays.length; i++) {
-        Intern.intern(arrays[i]);
+      for (int[] elt : arrays) {
+        Intern.intern(elt);
       }
       if (Intern.numIntArrays() != size1) {
         throw new Error("Expected " + size1 + ", got " + Intern.numIntArrays() + " int arrays");
@@ -55,8 +67,8 @@ public final class InternTest {
       }
       for (int i = 10; i < arrays.length; i++) {
         @SuppressWarnings("nullness") // test code: permit garbage collection to test interning
-        int @NonNull [] reset_value = null;
-        arrays[i] = reset_value;
+        int @NonNull [] resetValue = null;
+        arrays[i] = resetValue;
       }
       System.gc();
       if (Intern.numIntArrays() != size2) {
@@ -68,8 +80,8 @@ public final class InternTest {
                   + Intern.numIntArrays());
         } else {
           System.out.println("================");
-          for (int i = 0; i < arrays.length; i++) {
-            System.out.println(Arrays.toString(arrays[i]));
+          for (int[] elt : arrays) {
+            System.out.println(Arrays.toString(elt));
           }
           System.out.println("================");
           for (Iterator<int[]> itor = Intern.intArrays(); itor.hasNext(); ) {
@@ -85,11 +97,11 @@ public final class InternTest {
   }
 
   @Test
-  public void testHasher() {
+  void testHasher() {
 
-    /// To check (maybe some of these are done already).
-    /// All of these methods are in Intern; should the tests appear in
-    /// testIntern() or here?
+    // // To check (maybe some of these are done already).
+    // // All of these methods are in Intern; should the tests appear in
+    // // testIntern() or here?
     // public static void internStrings(String[] a)
     // public static boolean isInterned(Object value)
     // public static int numIntegers()
@@ -123,26 +135,103 @@ public final class InternTest {
   }
 
   @Test
-  public void testIntern() {
+  void testIntern() {
     Integer i = Intern.internedInteger("1234");
     assertTrue(Intern.isInterned(i));
-    assertTrue(i.intValue() == 1234);
+    assertEquals(1234, i.intValue());
     i = Intern.internedInteger("0x12ab");
     assertTrue(Intern.isInterned(i));
-    assertTrue(i.intValue() == 0x12ab);
+    assertEquals(0x12ab, i.intValue());
 
     Long l = Intern.internedLong("12345678");
     assertTrue(Intern.isInterned(l));
-    assertTrue(l.intValue() == 12345678);
+    assertEquals(12_345_678, l.intValue());
     l = Intern.internedLong("0x1234abcd");
     assertTrue(Intern.isInterned(l));
-    assertTrue(l.intValue() == 0x1234abcd);
+    assertEquals(0x1234abcd, l.intValue());
+  }
+
+  @Test
+  void testIsInternedHasNoSideEffect() {
+    int[] ia1 = {20_261_030, 1, 2};
+    assertFalse(Intern.isInterned(ia1));
+    int[] ia2 = {20_261_030, 1, 2};
+    assertSame(ia2, Intern.intern(ia2));
+    assertTrue(Intern.isInterned(ia2));
+    assertFalse(Intern.isInterned(ia1));
+
+    Integer i1 = Integer.valueOf(20_261_030);
+    assertFalse(Intern.isInterned(i1));
+    Integer i2 = Integer.valueOf(20_261_030);
+    assertSame(i2, Intern.intern(i2));
+    assertTrue(Intern.isInterned(i2));
+    assertFalse(Intern.isInterned(i1));
+
+    Long l1 = Long.valueOf(20_261_101L);
+    assertFalse(Intern.isInterned(l1));
+    Long l2 = Long.valueOf(20_261_101L);
+    assertSame(l2, Intern.intern(l2));
+    assertTrue(Intern.isInterned(l2));
+    assertFalse(Intern.isInterned(l1));
+
+    long[] la1 = {20_261_101L, 1, 2};
+    assertFalse(Intern.isInterned(la1));
+    long[] la2 = {20_261_101L, 1, 2};
+    assertSame(la2, Intern.intern(la2));
+    assertTrue(Intern.isInterned(la2));
+    assertFalse(Intern.isInterned(la1));
+
+    Double d1 = Double.valueOf(2026.1030);
+    assertFalse(Intern.isInterned(d1));
+    Double d2 = Double.valueOf(2026.1030);
+    assertSame(d2, Intern.intern(d2));
+    assertTrue(Intern.isInterned(d2));
+    assertFalse(Intern.isInterned(d1));
+
+    double[] da1 = {2026.1101, 1, 2};
+    assertFalse(Intern.isInterned(da1));
+    double[] da2 = {2026.1101, 1, 2};
+    assertSame(da2, Intern.intern(da2));
+    assertTrue(Intern.isInterned(da2));
+    assertFalse(Intern.isInterned(da1));
+
+    @Interned String[] sa1 = {"isInternedHasNoSideEffect", "2026-11-01"};
+    assertFalse(Intern.isInterned(sa1));
+    @Interned String[] sa2 = {"isInternedHasNoSideEffect", "2026-11-01"};
+    assertSame(sa2, Intern.intern(sa2));
+    assertTrue(Intern.isInterned(sa2));
+    assertFalse(Intern.isInterned(sa1));
+
+    @Interned Object[] oa1 = {"isInternedHasNoSideEffect", Intern.internedInteger(20_261_101)};
+    assertFalse(Intern.isInterned(oa1));
+    @Interned Object[] oa2 = {"isInternedHasNoSideEffect", Intern.internedInteger(20_261_101)};
+    assertSame(oa2, Intern.intern(oa2));
+    assertTrue(Intern.isInterned(oa2));
+    assertFalse(Intern.isInterned(oa1));
+  }
+
+  @Test
+  void testIsInternedDoubleNaNAndZero() {
+    assertTrue(Intern.isInterned(Intern.internedDouble(Double.NaN)));
+    assertFalse(Intern.isInterned(Double.valueOf(Double.NaN)));
+
+    @Interned Double zero = Intern.internedDouble(0.0);
+    assertSame(zero, Intern.internedDouble(-0.0));
+    assertTrue(Intern.isInterned(zero));
+    assertFalse(Intern.isInterned(Double.valueOf(0.0)));
+    assertFalse(Intern.isInterned(Double.valueOf(-0.0)));
+  }
+
+  @Test
+  void testIsInternedStringArrayWithNonInternedElement() {
+    String[] sa = {new String("isInternedStringArray")};
+    assertFalse(Intern.isInterned(sa));
   }
 
   // Tests the method "Object intern(Object)" in Intern.java
-  @SuppressWarnings({"deprecation", "BoxedPrimitiveConstructor"}) // interning test
+  @SuppressWarnings({"deprecation", "removal", "BoxedPrimitiveConstructor"}) // interning test
   @Test
-  public void testInternObject() {
+  void testInternObject() {
     Object nIntern = Intern.intern((@Nullable Object) null);
     assertTrue(nIntern == null);
 
@@ -153,7 +242,7 @@ public final class InternTest {
     Object sOtherIntern = Intern.intern(new String("foo"));
     assertTrue(sIntern == sOtherIntern);
 
-    @Interned String[] saOrig = new String[] {"foo", "bar"};
+    @Interned String[] saOrig = {"foo", "bar"};
     String[] saIntern = Intern.intern(saOrig);
     Object saObjIntern = Intern.intern((Object) saOrig);
     assertTrue(saIntern == saObjIntern);
@@ -167,25 +256,26 @@ public final class InternTest {
     Object iOtherIntern = Intern.intern((Object) new Integer(1));
     assertTrue(iIntern == iOtherIntern);
 
-    Long lOrig = new Long(12345678901234L);
+    Long lOrig = new Long(12_345_678_901_234L);
     Long lIntern = Intern.intern(lOrig);
     Object lObjIntern = Intern.intern((Object) lOrig);
     assertTrue(lIntern == lObjIntern);
-    Object lOtherIntern = Intern.intern((Object) new Long(12345678901234L));
+    Object lOtherIntern = Intern.intern((Object) new Long(12_345_678_901_234L));
     assertTrue(lIntern == lOtherIntern);
 
-    int[] iaOrig = new int[] {1, 2, 3};
+    int[] iaOrig = {1, 2, 3};
     int[] iaIntern = Intern.intern(iaOrig);
     Object iaObjIntern = Intern.intern((Object) iaOrig);
     assertTrue(iaIntern == iaObjIntern);
     Object iaOtherIntern = Intern.intern((Object) new int[] {1, 2, 3});
     assertTrue(iaIntern == iaOtherIntern);
 
-    long[] laOrig = new long[] {12345678901234L, 98765432109876L};
+    long[] laOrig = {12_345_678_901_234L, 98_765_432_109_876L};
     long[] laIntern = Intern.intern(laOrig);
     Object laObjIntern = Intern.intern((Object) laOrig);
     assertTrue(laIntern == laObjIntern);
-    Object laOtherIntern = Intern.intern((Object) new long[] {12345678901234L, 98765432109876L});
+    Object laOtherIntern =
+        Intern.intern((Object) new long[] {12_345_678_901_234L, 98_765_432_109_876L});
     assertTrue(laIntern == laOtherIntern);
 
     // Need to test positive and negative zeros, infinities.
@@ -225,14 +315,14 @@ public final class InternTest {
     Object dzOtherIntern = Intern.intern((Object) new Double(negativeZero));
     assertTrue(dzIntern == dzOtherIntern);
 
-    double[] daOrig = new double[] {3.14, 2.71};
+    double[] daOrig = {3.14, 2.71};
     double[] daIntern = Intern.intern(daOrig);
     Object daObjIntern = Intern.intern((Object) daOrig);
     assertTrue(daIntern == daObjIntern);
     Object daOtherIntern = Intern.intern((Object) new double[] {3.14, 2.71});
     assertTrue(daIntern == daOtherIntern);
 
-    double[] da2Orig = new double[] {+0.0, Double.NaN};
+    double[] da2Orig = {+0.0, Double.NaN};
     double[] da2Intern = Intern.intern(da2Orig);
     Object da2ObjIntern = Intern.intern((Object) da2Orig);
     assertTrue(da2Intern == da2ObjIntern);
@@ -241,29 +331,27 @@ public final class InternTest {
             (Object) new double[] {-0.0, Double.POSITIVE_INFINITY / Double.POSITIVE_INFINITY});
     assertTrue(da2Intern == da2OtherIntern);
 
-    @Interned Object[] oaOrig = new Object[] {"foo", 1};
+    @Interned Object[] oaOrig = {"foo", 1};
     Object[] oaIntern = Intern.intern(oaOrig);
     Object oaObjIntern = Intern.intern((Object) oaOrig);
     assertTrue(oaIntern == oaObjIntern);
     Object oaOtherIntern = Intern.intern((Object) new Object[] {"foo", 1});
     assertTrue(oaIntern == oaOtherIntern);
+  }
 
+  @Test
+  void testInternObjectException() {
     java.awt.Point pOrig = new java.awt.Point(1, 2);
-    try {
-      Intern.intern((Object) pOrig); // performed for side effect
-      throw new Error("Didn't throw IllegalArgumentException");
-    } catch (IllegalArgumentException e) {
-    }
+    assertThrows(IllegalArgumentException.class, () -> Intern.intern((Object) pOrig));
   }
 
   /**
-   * Test the intering of subsequences as triples of the original sequence, the start and the end
+   * Test the interning of subsequences as triples of the original sequence, the start and the end
    * indices.
    */
-  @SuppressWarnings(
-      "index:argument.type.incompatible") // https://github.com/typetools/checker-framework/issues/2484
+  @SuppressWarnings("index:argument") // https://github.com/typetools/checker-framework/issues/2484
   @Test
-  public void testSequenceAndIndices() {
+  void testSequenceAndIndices() {
     int[] a1 = Intern.intern(new int[] {1, 2, 3, 4, 5, 6, 7});
     int[] a2 = Intern.intern(new int[] {1, 2, 3, 4, 5, 6, 7});
     int[] a3 = Intern.intern(new int[] {2, 3, 4, 5, 6, 7});
@@ -281,8 +369,8 @@ public final class InternTest {
     assertTrue(s1 == s2);
     assertTrue(s3 == s4);
     assertTrue(s3 == s5);
-    assertTrue(ArraysPlume.isSubarray(s1, ArraysPlume.subarray(a1, i, j - i), 0));
-    assertTrue(ArraysPlume.isSubarray(ArraysPlume.subarray(a1, i, j - i), s1, 0));
+    assertTrue(ArraysP.isSubarray(s1, ArraysP.subarray(a1, i, j - i), 0));
+    assertTrue(ArraysP.isSubarray(ArraysP.subarray(a1, i, j - i), s1, 0));
 
     long[] l1 = Intern.intern(new long[] {1, 2, 3, 4, 5, 6});
     assertTrue(l1 == Intern.internSubsequence(l1, 0, l1.length));

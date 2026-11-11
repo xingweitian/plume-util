@@ -1,6 +1,7 @@
 package org.plumelib.util;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import org.checkerframework.checker.index.qual.IndexOrHigh;
@@ -25,39 +26,29 @@ import org.checkerframework.dataflow.qual.SideEffectFree;
  * @param <T> the type of elements in the set
  */
 public class LimitedSizeSet<T extends @Nullable Object> implements Serializable, Cloneable {
-  // We are Serializable, so we specify a version to allow changes to
-  // method signatures without breaking serialization.  If you add or
-  // remove fields, you should change this number to the current date.
-  static final long serialVersionUID = 20031021L;
+  /** Unique identifier for serialization. If you add or remove fields, change this number. */
+  private static final long serialVersionUID = 20031021L;
 
   // The size is not separately stored, because that would take extra space.
   /**
    * If null, then at least {@link #numValues} distinct values have been seen (and {@link
    * #numValues} equals the {@code maxValues} argument to the constructor).
    */
+  @SuppressWarnings("serial") // don't serialize this if element type is not serializable
   protected @Nullable T @Nullable @MinLen(1) [] values;
+
   /** The number of active elements (equivalently, the first unused index). */
   // The Index Checker annotation is not @IndexOrHigh("values"), because the invariant is broken
   // when the values field is set to null. Warnings are suppressed when breaking the invariant.
   protected @IndexOrHigh("values") int numValues;
 
-  /** Whether assertions are enabled. */
-  private static boolean assertsEnabled = false;
-
-  static {
-    assert assertsEnabled = true; // Intentional side-effect!!!
-    // Now assertsEnabled is set to the correct value
-  }
-
   /**
-   * Create a new LimitedSizeSet that can hold maxValues values.
+   * Creates a new LimitedSizeSet that can hold maxValues values.
    *
    * @param maxValues the maximum number of values this set will be able to hold; must be positive
    */
   public LimitedSizeSet(@Positive int maxValues) {
-    if (assertsEnabled && !(maxValues > 0)) {
-      throw new IllegalArgumentException("maxValues should be positive, is " + maxValues);
-    }
+    assert maxValues > 0 : "maxValues should be positive, is " + maxValues;
     // this.maxValues = maxValues;
     @SuppressWarnings({
       "unchecked",
@@ -69,7 +60,7 @@ public class LimitedSizeSet<T extends @Nullable Object> implements Serializable,
   }
 
   /**
-   * Add an element to this set.
+   * Adds an element to this set.
    *
    * @param elt the element to add to this set
    */
@@ -90,7 +81,7 @@ public class LimitedSizeSet<T extends @Nullable Object> implements Serializable,
   }
 
   /**
-   * Add all elements of {@code s} to this set.
+   * Adds all elements of {@code s} to this set.
    *
    * @param s the elements to add to this set
    */
@@ -159,6 +150,16 @@ public class LimitedSizeSet<T extends @Nullable Object> implements Serializable,
   }
 
   /**
+   * Returns true if this is empty.
+   *
+   * @return true if this is empty
+   */
+  @Pure
+  public boolean isEmpty() {
+    return size() == 0;
+  }
+
+  /**
    * An upper bound on how many distinct elements can be individually represented in the set.
    * Returns maxValues+1 (where maxValues is the argument to the constructor).
    *
@@ -200,8 +201,7 @@ public class LimitedSizeSet<T extends @Nullable Object> implements Serializable,
     values = null;
   }
 
-  @SuppressWarnings(
-      "allcheckers:purity.not.sideeffectfree.assign.field") // side effect to local state (clone)
+  @SuppressWarnings("allcheckers:purity.assign.field") // side effect to local state (clone)
   @SideEffectFree
   @Override
   public LimitedSizeSet<T> clone(@GuardSatisfied LimitedSizeSet<T> this) {
@@ -211,7 +211,7 @@ public class LimitedSizeSet<T extends @Nullable Object> implements Serializable,
       LimitedSizeSet<T> resultAsLss = (LimitedSizeSet<T>) super.clone();
       result = resultAsLss;
     } catch (CloneNotSupportedException e) {
-      throw new Error(); // can't happen
+      throw new Error(e); // can't happen
     }
     if (values != null) {
       result.values = values.clone();
@@ -224,9 +224,9 @@ public class LimitedSizeSet<T extends @Nullable Object> implements Serializable,
    * values seen by the entire list. Returns the new object, whose maxValues is the given integer.
    *
    * @param <T> (super)type of elements of the sets
-   * @param maxValues the maximum size for the returned LimitedSizeSet
-   * @param slist a list of LimitedSizeSet, whose elements will be merged
-   * @return a LimitedSizeSet that merges the elements of slist
+   * @param maxValues the maximum size for the returned set
+   * @param slist a list of sets, whose elements will be merged
+   * @return a set that merges the elements of slist
    */
   public static <T extends @Nullable Object> LimitedSizeSet<T> merge(
       @Positive int maxValues, List<LimitedSizeSet<? extends T>> slist) {
@@ -240,6 +240,6 @@ public class LimitedSizeSet<T extends @Nullable Object> implements Serializable,
   @SideEffectFree
   @Override
   public String toString(@GuardSatisfied LimitedSizeSet<T> this) {
-    return ("[size=" + size() + "; " + (repNulled() ? "null" : ArraysPlume.toString(values)) + "]");
+    return ("[size=" + size() + "; " + Arrays.toString(values) + "]");
   }
 }

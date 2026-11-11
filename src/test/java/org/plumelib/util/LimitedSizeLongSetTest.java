@@ -1,6 +1,9 @@
 package org.plumelib.util;
 
-@SuppressWarnings({
-  "UseCorrectAssertInTests" // `assert` works fine in tests
-})
-public final class LimitedSizeLongSetTest {}
+/** Test the LimitedSizeLongSet class. */
+final class LimitedSizeLongSetTest {
+
+  LimitedSizeLongSetTest() {}
+
+  // TODO
+}

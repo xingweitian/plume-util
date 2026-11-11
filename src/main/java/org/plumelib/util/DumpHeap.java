@@ -9,12 +9,22 @@ import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 /** Defines a static method {@link #dumpHeap} that dumps the heap to an .hprof file. */
-public class DumpHeap {
+@SuppressWarnings("signedness") // lack of annotations on ManagementFactory and reflection
+public final class DumpHeap {
+
+  /** Do not instantiate. */
+  private DumpHeap() {
+    throw new UnsupportedOperationException("Do not instantiate");
+  }
+
+  /** The lock that guards {@link #hotspotMBean} and {@link #dumpHeapMethod}. */
+  private static final Object lock = new Object();
 
   /**
    * The HotSpot Diagnostic MBean. Its type is Object, in case HotSpotDiagnosticMXBean is not
    * available at compile time.
    */
+  @SuppressWarnings("PMD.AvoidUsingVolatile")
   private static volatile @MonotonicNonNull Object hotspotMBean;
 
   /** The method com.sun.management.HotSpotDiagnosticMXBean#dumpHeap. */
@@ -22,21 +32,24 @@ public class DumpHeap {
 
   /** Initialize the fields of this class. */
   @SuppressWarnings({
-    "nullness:assignment.type.incompatible",
-    "nullness:contracts.postcondition.not.satisfied"
+    "nullness:type.arguments.not.inferred",
+    "nullness:assignment",
+    "nullness:contracts.postcondition"
   }) // reflection
   @EnsuresNonNull({"hotspotMBean", "dumpHeapMethod"})
-  private static synchronized void initializeFields() {
-    try {
-      Class<?> mxbeanClass = Class.forName("com.sun.management.HotSpotDiagnosticMXBean");
-      hotspotMBean =
-          ManagementFactory.newPlatformMXBeanProxy(
-              ManagementFactory.getPlatformMBeanServer(),
-              "com.sun.management:type=HotSpotDiagnostic",
-              mxbeanClass);
-      dumpHeapMethod = mxbeanClass.getMethod("dumpHeap", String.class, boolean.class);
-    } catch (ClassNotFoundException | IOException | NoSuchMethodException e) {
-      throw new Error(e);
+  private static void initializeFields() {
+    synchronized (lock) {
+      try {
+        Class<?> mxbeanClass = Class.forName("com.sun.management.HotSpotDiagnosticMXBean");
+        hotspotMBean =
+            ManagementFactory.newPlatformMXBeanProxy(
+                ManagementFactory.getPlatformMBeanServer(),
+                "com.sun.management:type=HotSpotDiagnostic",
+                mxbeanClass);
+        dumpHeapMethod = mxbeanClass.getMethod("dumpHeap", String.class, boolean.class);
+      } catch (ClassNotFoundException | IOException | NoSuchMethodException e) {
+        throw new Error(e);
+      }
     }
   }
 
